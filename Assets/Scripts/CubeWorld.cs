@@ -45,7 +45,11 @@ public class CubeWorld : MonoBehaviour
     public float fallResetDistance = 10f;
 
     [Header("Testing")]
-    [Tooltip("Unlock every face so you can jump anywhere while greyboxing.")]
+    [Tooltip("GREYBOX MODE: hides every locked cover in the editor, and unlocks every face in Play. " +
+             "Untick when greyboxing is finished to bring back the fog and normal progression.")]
+    public bool greyboxMode = false;
+
+    [Tooltip("Unlock every face in Play, but keep covers visible in the editor.")]
     public bool unlockAllFaces = false;
 
     public Mode CurrentMode { get; private set; }
@@ -79,11 +83,44 @@ public class CubeWorld : MonoBehaviour
         int startIndex = Mathf.Clamp(startLevel - 1, 0, faces.Length - 1);
         highestUnlocked = startIndex;
 
+        // Greybox Mode or Unlock All Faces = every face open, no fog.
+        // Otherwise only faces up to the start level are unlocked.
+        bool openEverything = greyboxMode || unlockAllFaces;
         for (int i = 0; i < faces.Length; i++)
-            faces[i].SetUnlocked(unlockAllFaces || i <= highestUnlocked);
+            faces[i].SetUnlocked(openEverything || i <= highestUnlocked);
 
         StartCoroutine(StartSequence(startIndex));
     }
+
+#if UNITY_EDITOR
+    // Runs in the editor whenever a value on this component changes.
+    // Shows or hides every face's locked cover to match Greybox Mode.
+    void OnValidate()
+    {
+        if (Application.isPlaying) return;
+
+        // Unity doesn't allow switching objects on/off directly inside OnValidate,
+        // so we wait one editor tick and do it then.
+        UnityEditor.EditorApplication.delayCall += ApplyEditorCovers;
+    }
+
+    void ApplyEditorCovers()
+    {
+        if (this == null || faces == null) return; // object was deleted in the meantime
+
+        bool showCovers = !greyboxMode;
+
+        foreach (CubeFace face in faces)
+        {
+            if (face == null || face.lockedCover == null) continue;
+            if (face.lockedCover.activeSelf == showCovers) continue;
+
+            // Recorded so Ctrl+Z works and the scene knows it needs saving
+            UnityEditor.Undo.RecordObject(face.lockedCover, "Toggle Locked Cover");
+            face.lockedCover.SetActive(showCovers);
+        }
+    }
+#endif
 
     // Builds (or rebuilds) one face's layout
     void GenerateFace(int index)
