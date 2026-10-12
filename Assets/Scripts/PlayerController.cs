@@ -121,11 +121,17 @@ public class PlayerController : MonoBehaviour
     // Places the player at a spawn point and shows them
     public void Spawn(Transform point)
     {
+        Spawn(point.position, point.rotation);
+    }
+
+    // Places the player at an exact spot, used when returning from the map
+    public void Spawn(Vector3 position, Quaternion rotation)
+    {
         gameObject.SetActive(true);
 
         // A CharacterController must be disabled to teleport it
         controller.enabled = false;
-        transform.SetPositionAndRotation(point.position, point.rotation);
+        transform.SetPositionAndRotation(position, rotation);
         controller.enabled = true;
 
         verticalVelocity = 0f;

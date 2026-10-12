@@ -8,6 +8,9 @@ using System.Collections.Generic;
 [RequireComponent(typeof(CubeFace))]
 public class LevelGenerator : MonoBehaviour
 {
+    // Shapes a dream fragment can take
+    public enum FragmentShape { Crystal, Cube, Sphere, Capsule, Cylinder, Prefab }
+
     [Header("Theme")]
     [Tooltip("The LevelTheme asset holding this level's settings.")]
     public LevelTheme theme;
@@ -24,13 +27,34 @@ public class LevelGenerator : MonoBehaviour
     [Tooltip("How high the walkways float above the cube surface.")]
     public float baseHeight = 1.5f;
 
+    [Header("Fragment Shape")]
+    public FragmentShape fragmentShape = FragmentShape.Crystal;
+    [Tooltip("Overall size of the fragment.")]
+    public float fragmentSize = 0.6f;
+    [Tooltip("Stretches the shape vertically. 1 = even, 2 = tall and thin.")]
+    public float fragmentStretch = 1.4f;
+    [Tooltip("Used when Shape is set to Prefab. Drop any model in here.")]
+    public GameObject fragmentPrefab;
+
     [Header("Fragment Placement")]
-    [Tooltip("How high above the floor fragments hover.")]
-    public float fragmentHeight = 1f;
-    [Tooltip("Clear space a fragment needs around it. Raise if they still feel cramped.")]
-    public float fragmentClearance = 0.8f;
+    [Tooltip("How high above the floor fragments hover. Raise if they sit too low.")]
+    public float fragmentHeight = 1.2f;
+    [Tooltip("Clear space a fragment needs around it. Raise if they feel cramped.")]
+    public float fragmentClearance = 1f;
+    [Tooltip("If the level is too crowded, remove pillars to fit every fragment in.")]
+    public bool guaranteeFragmentCount = true;
 
     const string GeneratedName = "Generated";
+
+    [Header("Altar")]
+    [Tooltip("Size of the altar the player delivers fragments to.")]
+    public float altarSize = 1.6f;
+
+    [Tooltip("How far around the altar counts as delivering.")]
+    public float altarTriggerRadius = 2.5f;
+    
+    [Tooltip("Optional. A model to use instead of a plain block.")]
+    public GameObject altarPrefab;
 
     System.Random rng;
     Transform root;
@@ -47,8 +71,11 @@ public class LevelGenerator : MonoBehaviour
     List<int> deadEnds = new List<int>();
     List<Renderer> floorRenderers = new List<Renderer>();
 
-    // Cells with clear, flat, unobstructed floor — the only places fragments may go
-    HashSet<int> clearCells = new HashSet<int>();
+    // What's in the way, recorded as the level is built
+    HashSet<int> wallCells = new HashSet<int>();
+    HashSet<int> gapCells = new HashSet<int>();
+    Dictionary<int, List<GameObject>> pillarsByCell = new Dictionary<int, List<GameObject>>();
+    HashSet<int> usedCells = new HashSet<int>();
 
     [ContextMenu("Generate Preview")]
     void GeneratePreview()
@@ -67,8 +94,7 @@ public class LevelGenerator : MonoBehaviour
 
         // Rename first, because Destroy only takes effect at the end of the frame
         old.name = "GeneratedOld";
-        if (Application.isPlaying) Destroy(old.gameObject);
-        else DestroyImmediate(old.gameObject);
+        SafeDestroy(old.gameObject);
     }
 
     // Builds the level. The same seed always gives the same layout.
@@ -108,6 +134,10 @@ public class LevelGenerator : MonoBehaviour
 
         BuildCells();
         PlaceDoorAndSpawn();
+
+        // The new floors need to be registered with physics before we can measure them
+        Physics.SyncTransforms();
+
         PlaceFragments();
         ApplyFaceColor();
     }
@@ -321,7 +351,10 @@ public class LevelGenerator : MonoBehaviour
     void BuildCells()
     {
         floorRenderers.Clear();
-        clearCells.Clear();
+        wallCells.Clear();
+        gapCells.Clear();
+        pillarsByCell.Clear();
+        usedCells.Clear();
 
         foreach (KeyValuePair<int, float> pair in carved)
         {
@@ -335,22 +368,26 @@ public class LevelGenerator : MonoBehaviour
             // Occasionally split the floor, leaving a gap to jump
             bool gap = !special && dir != Vector3.zero && rng.NextDouble() < theme.gapChance;
 
-            if (gap) MakeSplitFloor(c, center, dir);
-            else MakeFloor("Floor_" + c, center, new Vector3(cell, 1f, cell));
+            if (gap)
+            {
+                MakeSplitFloor(c, center, dir);
+                gapCells.Add(c);
+            }
+            else
+            {
+                MakeFloor("Floor_" + c, center, new Vector3(cell, 1f, cell));
+            }
 
-            // A split or special cell is never a fragment spot
             if (special || gap) continue;
-
-            bool blocked = false;
 
             // A wall across the cell with a gap to walk through
             if (dir != Vector3.zero && rng.NextDouble() < theme.wallChance)
             {
                 MakeWall(c, center, dir);
-                blocked = true;
+                wallCells.Add(c);
             }
 
-            // Loose pillars to break up the space
+            // Loose pillars to break up the space, remembered so fragments can dodge them
             int pillars = rng.Next(theme.pillarsPerCell.x, theme.pillarsPerCell.y + 1);
             for (int p = 0; p < pillars; p++)
             {
@@ -358,14 +395,13 @@ public class LevelGenerator : MonoBehaviour
                 float oz = (float)(rng.NextDouble() - 0.5) * cell * 0.6f;
 
                 Vector3 pos = center + new Vector3(ox, theme.pillarSize, oz);
-                MakeCube("Pillar_" + c + "_" + p, pos,
-                         new Vector3(theme.pillarSize, theme.pillarSize * 2f, theme.pillarSize),
-                         theme.wallMaterial);
-                blocked = true;
-            }
+                GameObject pillar = MakeCube("Pillar_" + c + "_" + p, pos,
+                    new Vector3(theme.pillarSize, theme.pillarSize * 2f, theme.pillarSize),
+                    theme.wallMaterial);
 
-            // Only solid, flat, empty cells can hold a fragment
-            if (!blocked) clearCells.Add(c);
+                if (!pillarsByCell.ContainsKey(c)) pillarsByCell[c] = new List<GameObject>();
+                pillarsByCell[c].Add(pillar);
+            }
         }
     }
 
@@ -427,18 +463,6 @@ public class LevelGenerator : MonoBehaviour
 
     void PlaceDoorAndSpawn()
     {
-        // Door of light at the far edge
-        float exitHeight = baseHeight + carved[exitCell];
-        Vector3 exitPos = CellCenter(exitCell, exitHeight);
-        Vector3 dir = DirectionFromParent(exitCell);
-        if (dir == Vector3.zero) dir = Vector3.forward;
-
-        GameObject door = MakeCube("DreamDoor", exitPos + Vector3.up * 1.5f,
-                                   new Vector3(3f, 3f, 0.5f), theme.doorMaterial);
-        door.transform.localRotation = Quaternion.LookRotation(dir);
-        door.GetComponent<Collider>().isTrigger = true;
-        door.AddComponent<DreamDoor>();
-
         // Spawn point on the starting cell
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.spawnPoint != null)
@@ -449,71 +473,256 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-    // Fragments go in clear cells only, dead ends first so exploring pays off
+    // Builds the altar, the fragments and the (hidden) door
     void PlaceFragments()
     {
         int wanted = theme.collectibles;
-        if (LevelObjectives.Instance != null) LevelObjectives.Instance.SetRequired(0);
-        if (wanted <= 0) return;
 
-        // Dead ends that are actually clear make the best hiding spots
-        List<int> spots = new List<int>();
+        // --- The altar, on the exit cell so it's a clear destination ---
+        float exitHeight = baseHeight + carved[exitCell];
+        Vector3 altarPos = CellCenter(exitCell, exitHeight);
+
+        GameObject altarObj;
+        if (altarPrefab != null)
+        {
+            altarObj = Instantiate(altarPrefab, root);
+            altarObj.transform.localPosition = altarPos;
+        }
+        else
+        {
+            altarObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            altarObj.transform.SetParent(root, false);
+            altarObj.transform.localPosition = altarPos + Vector3.up * altarSize * 0.5f;
+            altarObj.transform.localScale = new Vector3(altarSize, altarSize, altarSize);
+        }
+
+        altarObj.name = "DreamAltar";
+        DreamAltar altar = altarObj.GetComponent<DreamAltar>();
+        if (altar == null) altar = altarObj.AddComponent<DreamAltar>();
+
+        // A wide trigger around it, so the player just has to walk up
+        GameObject triggerObj = new GameObject("AltarTrigger");
+        triggerObj.transform.SetParent(root, false);
+        triggerObj.transform.localPosition = altarPos + Vector3.up;
+
+        SphereCollider trigger = triggerObj.AddComponent<SphereCollider>();
+        trigger.radius = altarTriggerRadius;
+        trigger.isTrigger = true;
+        triggerObj.AddComponent<AltarTrigger>();
+
+        // --- The door, placed beside the altar and hidden for now ---
+        Vector3 doorDir = DirectionFromParent(exitCell);
+        if (doorDir == Vector3.zero) doorDir = Vector3.forward;
+
+        GameObject door = MakeCube("DreamDoor", altarPos + doorDir * cell * 0.4f + Vector3.up * 1.5f,
+                                   new Vector3(3f, 3f, 0.5f), theme.doorMaterial);
+        door.transform.localRotation = Quaternion.LookRotation(doorDir);
+        door.GetComponent<Collider>().isTrigger = true;
+        door.AddComponent<DreamDoor>();
+
+        // --- The fragments themselves ---
+        if (wanted <= 0)
+        {
+            Debug.LogWarning("LevelGenerator: '" + theme.name +
+                             "' has Collectibles set to 0, so no dream fragments were placed.");
+            LevelObjectives.Instance?.SetUpLevel(0, altar, door);
+            return;
+        }
+
+        // Dead ends are the best hiding spots, then anywhere else that's suitable
+        List<int> order = new List<int>();
         foreach (int c in deadEnds)
-            if (clearCells.Contains(c)) spots.Add(c);
+            if (IsCandidateCell(c) && !order.Contains(c)) order.Add(c);
+        Shuffle(order);
 
-        Shuffle(spots);
-
-        // Top up with any other clear cell if there aren't enough dead ends
         List<int> extras = new List<int>();
-        foreach (int c in clearCells)
-            if (!spots.Contains(c)) extras.Add(c);
-
+        foreach (int c in carved.Keys)
+            if (IsCandidateCell(c) && !order.Contains(c)) extras.Add(c);
         Shuffle(extras);
-        spots.AddRange(extras);
+
+        order.AddRange(extras);
 
         int placed = 0;
-        foreach (int c in spots)
+
+        // Pass 1: find a clear spot inside each candidate cell
+        foreach (int c in order)
         {
             if (placed >= wanted) break;
+            if (!TryFindSpot(c, out Vector3 spot)) continue;
 
-            Vector3 pos = CellCenter(c, baseHeight + carved[c]) + Vector3.up * fragmentHeight;
-
-            // Final safety check: skip the spot if anything solid is already there
-            if (IsBlocked(pos)) continue;
-
-            GameObject go = MakeCube("DreamFragment_" + placed, pos, Vector3.one * 0.6f,
-                                     theme.collectibleMaterial);
-            go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
-            go.GetComponent<Collider>().isTrigger = true;
-            go.AddComponent<DreamFragment>();
+            SpawnFragment(placed, spot);
+            usedCells.Add(c);
             placed++;
         }
 
-        if (placed < wanted)
-            Debug.LogWarning("Only placed " + placed + " of " + wanted +
-                             " fragments — not enough clear cells. Lower Wall Chance or Pillars.");
+        // Pass 2: if the level is too crowded, clear a cell's pillars to make room
+        if (placed < wanted && guaranteeFragmentCount)
+        {
+            foreach (int c in order)
+            {
+                if (placed >= wanted) break;
+                if (usedCells.Contains(c)) continue;
 
-        // Ask for what was actually placed, so the door can still open
-        if (LevelObjectives.Instance != null) LevelObjectives.Instance.SetRequired(placed);
+                ClearPillars(c);
+                Physics.SyncTransforms();
+
+                if (!TryFindSpot(c, out Vector3 spot)) continue;
+
+                SpawnFragment(placed, spot);
+                usedCells.Add(c);
+                placed++;
+            }
+        }
+
+        if (placed < wanted)
+            Debug.LogWarning("LevelGenerator: placed " + placed + " of " + wanted +
+                             " fragments. Try raising Coverage or lowering Wall Chance.");
+
+        // The altar asks for what actually got placed, so the level can always be finished
+        LevelObjectives.Instance?.SetUpLevel(placed, altar, door);
     }
 
-    // True if anything solid overlaps this spot
-    bool IsBlocked(Vector3 localPos)
+    // Cells that could hold a fragment: solid floor, not the start or the exit
+    bool IsCandidateCell(int c)
     {
-        Vector3 worldPos = root.TransformPoint(localPos);
-        Collider[] hits = Physics.OverlapSphere(worldPos, fragmentClearance);
+        if (!carved.ContainsKey(c)) return false;
+        if (c == startCell || c == exitCell) return false;
+        if (gapCells.Contains(c)) return false;   // split floor, nothing solid in the middle
+        if (wallCells.Contains(c)) return false;  // a wall crosses it
+        if (usedCells.Contains(c)) return false;
+        return true;
+    }
 
-        foreach (Collider col in hits)
+    // Looks for a spot in the cell that isn't inside a pillar,
+    // sitting on the real floor surface rather than a calculated height
+    bool TryFindSpot(int c, out Vector3 spot)
+    {
+        float guessHeight = baseHeight + carved[c];
+        Vector3 center = CellCenter(c, guessHeight);
+
+        // Try the middle first, then a ring of offsets around it
+        List<Vector3> tries = new List<Vector3> { center };
+        float reach = cell * 0.3f;
+
+        for (int i = 0; i < 8; i++)
         {
-            if (col.isTrigger) continue; // doors and other fragments don't count
-            if (col.GetComponent<PlayerController>() != null) continue;
+            float angle = i * 45f * Mathf.Deg2Rad;
+            tries.Add(center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * reach);
+        }
 
-            // Floors sit below the fragment, so ignore anything clearly underneath
-            if (col.bounds.max.y < worldPos.y - 0.4f) continue;
+        float needed = fragmentClearance + theme.pillarSize * 0.5f;
 
+        foreach (Vector3 candidate in tries)
+        {
+            if (!IsClearOfPillars(c, candidate, needed)) continue;
+
+            // Find the actual surface under this spot, so nothing ends up buried
+            float surface = FindSurfaceHeight(candidate, guessHeight);
+
+            spot = new Vector3(candidate.x, surface + fragmentHeight, candidate.z);
             return true;
         }
+
+        spot = Vector3.zero;
         return false;
+    }
+
+    // Casts a ray down onto the generated floor and returns its top surface,
+    // falling back to the calculated height if nothing is hit
+    float FindSurfaceHeight(Vector3 localPos, float fallback)
+    {
+        // Start well above the spot, in world space, pointing at the face
+        Vector3 worldStart = root.TransformPoint(localPos + Vector3.up * 10f);
+        Vector3 worldDown = root.TransformDirection(Vector3.down);
+
+        if (Physics.Raycast(worldStart, worldDown, out RaycastHit hit, 30f,
+                            ~0, QueryTriggerInteraction.Ignore))
+        {
+            // Only trust a hit on our own generated geometry
+            if (hit.transform.IsChildOf(root))
+                return root.InverseTransformPoint(hit.point).y;
+        }
+
+        return fallback;
+    }
+
+    // True if the spot is far enough from every pillar in this cell
+    bool IsClearOfPillars(int c, Vector3 pos, float needed)
+    {
+        if (!pillarsByCell.ContainsKey(c)) return true;
+
+        foreach (GameObject pillar in pillarsByCell[c])
+        {
+            if (pillar == null) continue;
+
+            Vector3 p = pillar.transform.localPosition;
+            float dx = p.x - pos.x;
+            float dz = p.z - pos.z;
+
+            if (dx * dx + dz * dz < needed * needed) return false;
+        }
+        return true;
+    }
+
+    // Removes a cell's pillars so a fragment can fit
+    void ClearPillars(int c)
+    {
+        if (!pillarsByCell.ContainsKey(c)) return;
+
+        foreach (GameObject pillar in pillarsByCell[c])
+            SafeDestroy(pillar);
+
+        pillarsByCell[c].Clear();
+    }
+
+    // Builds one fragment in the chosen shape
+    void SpawnFragment(int number, Vector3 localPos)
+    {
+        GameObject go;
+
+        if (fragmentShape == FragmentShape.Prefab && fragmentPrefab != null)
+        {
+            go = Instantiate(fragmentPrefab, root);
+            go.transform.localPosition = localPos;
+
+            // Make sure it has a trigger collider to pick up
+            Collider col = go.GetComponentInChildren<Collider>();
+            if (col == null) col = go.AddComponent<SphereCollider>();
+            col.isTrigger = true;
+        }
+        else
+        {
+            go = GameObject.CreatePrimitive(ShapeToPrimitive(fragmentShape));
+            go.transform.SetParent(root, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = new Vector3(fragmentSize,
+                                                  fragmentSize * fragmentStretch,
+                                                  fragmentSize);
+
+            // Tilting a cube on two axes gives it a cut-crystal look
+            go.transform.localRotation = fragmentShape == FragmentShape.Crystal
+                ? Quaternion.Euler(45f, 45f, 0f)
+                : Quaternion.identity;
+
+            if (theme.collectibleMaterial != null)
+                go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
+
+            go.GetComponent<Collider>().isTrigger = true;
+        }
+
+        go.name = "DreamFragment_" + number;
+        if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();
+    }
+
+    PrimitiveType ShapeToPrimitive(FragmentShape shape)
+    {
+        switch (shape)
+        {
+            case FragmentShape.Sphere: return PrimitiveType.Sphere;
+            case FragmentShape.Capsule: return PrimitiveType.Capsule;
+            case FragmentShape.Cylinder: return PrimitiveType.Cylinder;
+            default: return PrimitiveType.Cube; // Crystal is a tilted cube
+        }
     }
 
     // --- Building blocks --------------------------------------------
@@ -556,6 +765,14 @@ public class LevelGenerator : MonoBehaviour
             int j = rng.Next(i + 1);
             (list[i], list[j]) = (list[j], list[i]);
         }
+    }
+
+    // Works both in Play mode and in the editor
+    void SafeDestroy(Object obj)
+    {
+        if (obj == null) return;
+        if (Application.isPlaying) Destroy(obj);
+        else DestroyImmediate(obj);
     }
 
     // Hands the new floors to CubeFace so the face colour still applies

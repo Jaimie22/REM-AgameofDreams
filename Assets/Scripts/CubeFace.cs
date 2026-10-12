@@ -16,11 +16,18 @@ public class CubeFace : MonoBehaviour
     public GameObject lockedCover;
 
     [Header("Face Colour")]
-    [Tooltip("Identifying colour for this face.")]
+    [Tooltip("Untick to leave materials exactly as they are — needed for glass or any textured material.")]
+    public bool tintFloors = false;
+
+    [Tooltip("Identifying colour for this face. Only used when Tint Floors is ticked.")]
     public Color faceColor = Color.white;
 
-    [Tooltip("Objects to tint with the face colour (e.g. the Floor). Drag them in here.")]
+    [Tooltip("Objects tinted with the face colour. Filled in automatically by the generator.")]
     public Renderer[] colorRenderers;
+
+    [Header("Scene View")]
+    [Tooltip("Colour of the gizmo line, so faces are still tellable apart in the editor.")]
+    public Color gizmoColor = Color.cyan;
 
     // Colour property names: URP shaders use _BaseColor, older shaders use _Color
     static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
@@ -39,16 +46,25 @@ public class CubeFace : MonoBehaviour
         ApplyColor();
     }
 
-    // Tints each renderer without touching the shared material,
-    // so every face can have its own colour
+    // Tints each renderer without touching the shared material.
+    // With Tint Floors off, it clears any tint so the real material shows through.
     public void ApplyColor()
     {
         if (colorRenderers == null) return;
 
         MaterialPropertyBlock block = new MaterialPropertyBlock();
+
         foreach (Renderer r in colorRenderers)
         {
             if (r == null) continue;
+
+            if (!tintFloors)
+            {
+                // An empty block removes the override entirely
+                r.SetPropertyBlock(null);
+                continue;
+            }
+
             r.GetPropertyBlock(block);
             block.SetColor(BaseColorID, faceColor);
             block.SetColor(ColorID, faceColor);
@@ -64,10 +80,10 @@ public class CubeFace : MonoBehaviour
         if (lockedCover != null) lockedCover.SetActive(!unlocked);
     }
 
-    // Scene view helpers: line in the face colour = face "up", green sphere = spawn point
+    // Scene view helpers: line = face "up", green sphere = spawn point
     void OnDrawGizmos()
     {
-        Gizmos.color = faceColor;
+        Gizmos.color = tintFloors ? faceColor : gizmoColor;
         Gizmos.DrawLine(transform.position, transform.position + transform.up * 3f);
 
         if (spawnPoint != null)

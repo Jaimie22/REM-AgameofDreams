@@ -29,11 +29,11 @@ MonoBehaviour:
   pillarsPerCell: {x: 1, y: 2}
   pillarSize: 1.5
   gapChance: 0.2
-  gapSize: {x: 2, y: 3}
+  gapSize: {x: 1.5, y: 2}
   gravity: -20
   jumpHeight: 2
   collectibles: 5
-  floorMaterial: {fileID: 0}
-  wallMaterial: {fileID: 0}
+  floorMaterial: {fileID: 2100000, guid: 0b260dcf0f2e8f443ab1a7cbed9f4aae, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 0b260dcf0f2e8f443ab1a7cbed9f4aae, type: 2}
   doorMaterial: {fileID: 0}
   collectibleMaterial: {fileID: 0}
