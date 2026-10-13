@@ -20,6 +20,12 @@ public class CubeWorld : MonoBehaviour
     [Tooltip("Optional. Handles fog and lighting changes between faces.")]
     public MoodController moodController;
 
+    [Tooltip("Optional. The gradient backdrop shown in the cube view.")]
+    public BackgroundGradient backgroundGradient;
+
+    [Tooltip("Optional. The giant dreamer standing behind the cube.")]
+    public DreamerBackdrop dreamerBackdrop;
+
     [Header("Start")]
     [Tooltip("Which level the game starts on.")]
     [Range(1, 6)] public int startLevel = 1;
@@ -95,23 +101,31 @@ public class CubeWorld : MonoBehaviour
         StartCoroutine(StartSequence(startIndex));
     }
 
-    // Builds (or rebuilds) one face's layout
+    // Builds (or rebuilds) one face's layout, whichever generator it uses
     void GenerateFace(int index)
     {
         LevelGenerator generator = faces[index].GetComponent<LevelGenerator>();
-        if (generator == null) return;
+        if (generator != null) generator.Generate(faceSeeds[index]);
 
-        generator.Generate(faceSeeds[index]);
+        MazeGenerator maze = faces[index].GetComponent<MazeGenerator>();
+        if (maze != null) maze.Generate(faceSeeds[index]);
+
         Physics.SyncTransforms(); // make sure the new colliders are in place
     }
 
     // Applies this level's gravity and jump height
     void ApplyLevelRules(int index)
     {
-        LevelGenerator generator = faces[index].GetComponent<LevelGenerator>();
-        if (generator == null || generator.theme == null) return;
+        LevelTheme levelTheme = null;
 
-        player.ApplyMovementSettings(generator.theme.gravity, generator.theme.jumpHeight);
+        LevelGenerator generator = faces[index].GetComponent<LevelGenerator>();
+        if (generator != null) levelTheme = generator.theme;
+
+        MazeGenerator maze = faces[index].GetComponent<MazeGenerator>();
+        if (maze != null && maze.theme != null) levelTheme = maze.theme;
+
+        if (levelTheme == null) return;
+        player.ApplyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
     }
 
     void Update()
@@ -170,8 +184,6 @@ public class CubeWorld : MonoBehaviour
         }
     }
 
-    // --- Views ------------------------------------------------------
-
     // M: open the map, or close it and go back to where the player was
     void ToggleMap()
     {
@@ -187,6 +199,11 @@ public class CubeWorld : MonoBehaviour
         SaveCurrentSpot();
         player.Hide();
         dreamCamera.SetMapView(faces[CurrentFaceIndex].transform);
+
+        backgroundGradient?.SetVisible(true);
+        dreamerBackdrop?.SetVisible(true);
+        moodController?.SetAwayFromLevel(true);
+
         CurrentMode = Mode.Map;
     }
 
@@ -196,13 +213,12 @@ public class CubeWorld : MonoBehaviour
         SaveCurrentSpot();
         player.Hide();
         dreamCamera.SetOverview();
-        CurrentMode = Mode.Overview;
-    }
 
-    // Kept so other scripts calling the old name still work
-    public void GoToOverview()
-    {
-        GoToCubeView();
+        backgroundGradient?.SetVisible(true);
+        dreamerBackdrop?.SetVisible(true);
+        moodController?.SetAwayFromLevel(true);
+
+        CurrentMode = Mode.Overview;
     }
 
     // Back into the level, exactly where the player left off
@@ -229,6 +245,11 @@ public class CubeWorld : MonoBehaviour
     {
         CurrentMode = Mode.Transitioning;
         CubeFace face = faces[CurrentFaceIndex];
+
+        // The fog rolls back in as the cube turns
+        backgroundGradient?.SetVisible(false);
+        dreamerBackdrop?.SetVisible(false);
+        moodController?.SetAwayFromLevel(false);
 
         // The cube may have been spun while away, so turn it back
         Quaternion start = transform.rotation;
@@ -266,6 +287,11 @@ public class CubeWorld : MonoBehaviour
         // Snap the cube so this face is on top
         transform.rotation = Quaternion.Inverse(face.transform.localRotation);
         Physics.SyncTransforms();
+
+        // The game opens inside a level, not in the cube view
+        backgroundGradient?.SetVisible(false);
+        dreamerBackdrop?.SetVisible(false);
+        moodController?.SetAwayFromLevel(false);
 
         ApplyLevelRules(index);
         player.Spawn(face.spawnPoint);
@@ -390,6 +416,11 @@ public class CubeWorld : MonoBehaviour
         CurrentMode = Mode.Transitioning;
         CurrentFaceIndex = index;
         CubeFace face = faces[index];
+
+        // The backdrop fades and the level's fog rolls in as the cube turns
+        backgroundGradient?.SetVisible(false);
+        dreamerBackdrop?.SetVisible(false);
+        moodController?.SetAwayFromLevel(false);
 
         // A fresh start on this face, so any saved spot is no longer valid
         hasSavedSpot = false;

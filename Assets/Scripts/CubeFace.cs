@@ -25,6 +25,9 @@ public class CubeFace : MonoBehaviour
     [Tooltip("Objects tinted with the face colour. Filled in automatically by the generator.")]
     public Renderer[] colorRenderers;
 
+    [Tooltip("Optional. The giant dreamer standing behind the cube.")]
+    public DreamerBackdrop dreamerBackdrop;
+
     [Header("Scene View")]
     [Tooltip("Colour of the gizmo line, so faces are still tellable apart in the editor.")]
     public Color gizmoColor = Color.cyan;

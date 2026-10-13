@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b34de1fe53b8c949b88e7cc92ebf4d4, type: 3}
+  m_Name: 3-HeartRate
+  m_EditorClassIdentifier: 
+  levelName: 3-HeartRate
+  designNotes: This is the nightmare maze, in which as PJBoy, you must escape the
+    nightmare creature. Be warned! He can hear your heart! the faster you move, the
+    faster he moves!
+  cellSize: 3.5
+  coverage: 0.9
+  minRouteCells: 8
+  maxBranchLength: 3
+  roomChance: 0.08
+  stepHeight: 0.3
+  maxHeightDrift: 2
+  wallChance: 0.4
+  wallHeight: 3
+  wallGap: 2.5
+  pillarsPerCell: {x: 0, y: 1}
+  pillarSize: 1.2
+  gapChance: 0
+  gapSize: {x: 1.5, y: 2.5}
+  gravity: -20
+  jumpHeight: 1.5
+  collectibles: 5
+  floorMaterial: {fileID: 0}
+  wallMaterial: {fileID: 2100000, guid: ff0eed0e9415bd34fa7a8ca8a9dbc8a3, type: 2}
+  doorMaterial: {fileID: 0}
+  collectibleMaterial: {fileID: 2100000, guid: 84ed54c3a3569bd42be6f8d944714e6d, type: 2}
