@@ -20,13 +20,13 @@ public class LevelObjectives : MonoBehaviour
     DreamAltar altar;
     GameObject door;
 
-    void Awake()
+    private void Awake()
     {
         Instance = this;
     }
 
     // Called when a level is generated
-    public void SetUpLevel(int required, DreamAltar levelAltar, GameObject levelDoor)
+    public void setUpLevel(int required, DreamAltar levelAltar, GameObject levelDoor)
     {
         Required = required;
         Carried = 0;
@@ -40,21 +40,21 @@ public class LevelObjectives : MonoBehaviour
     }
 
     // Kept so older calls still work
-    public void SetRequired(int count)
+    public void setRequired(int count)
     {
-        SetUpLevel(count, altar, door);
+        setUpLevel(count, altar, door);
     }
 
     // A fragment was picked up off the floor
-    public void FragmentCollected()
+    public void fragmentCollected()
     {
         Carried++;
         Debug.Log("Dream fragment " + Carried + " of " + Required +
-                  (AllCollected ? " — take them to the altar." : ""));
+                  (AllCollected ? " â€” take them to the altar." : ""));
     }
 
     // The player reached the altar carrying fragments
-    public void DeliverToAltar()
+    public void deliverToAltar()
     {
         if (Carried <= 0) return;
 
@@ -62,16 +62,16 @@ public class LevelObjectives : MonoBehaviour
         {
             Carried--;
             Delivered++;
-            if (altar != null) altar.OnFragmentDelivered();
+            if (altar != null) altar.onFragmentDelivered();
         }
 
         Debug.Log("Delivered " + Delivered + " of " + Required + " to the altar.");
 
-        if (DoorOpen) RevealDoor();
+        if (DoorOpen) revealDoor();
     }
 
     // Brings the door of light into existence
-    void RevealDoor()
+    private void revealDoor()
     {
         Debug.Log("The door of light appears.");
         if (door != null) door.SetActive(true);

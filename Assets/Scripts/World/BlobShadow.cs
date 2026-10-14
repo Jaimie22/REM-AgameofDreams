@@ -34,13 +34,13 @@ public class BlobShadow : MonoBehaviour
     Material instanceMaterial;
     MeshRenderer blobRenderer;
 
-    void Start()
+    private void Start()
     {
-        CreateBlob();
+        createBlob();
     }
 
     // Builds the quad and its material once at startup
-    void CreateBlob()
+    private void createBlob()
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
         go.name = "BlobShadow";
@@ -54,7 +54,7 @@ public class BlobShadow : MonoBehaviour
 
         instanceMaterial = shadowMaterial != null
             ? new Material(shadowMaterial)
-            : BuildDefaultMaterial();
+            : buildDefaultMaterial();
 
         blobRenderer.material = instanceMaterial;
 
@@ -63,13 +63,13 @@ public class BlobShadow : MonoBehaviour
     }
 
     // A see-through unlit material with a soft circle painted into it
-    Material BuildDefaultMaterial()
+    private Material buildDefaultMaterial()
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null) shader = Shader.Find("Unlit/Transparent");
 
         Material mat = new Material(shader);
-        mat.SetTexture("_BaseMap", BuildCircleTexture());
+        mat.SetTexture("_BaseMap", buildCircleTexture());
         mat.SetColor("_BaseColor", shadowColor);
 
         // Switch the material into transparent mode
@@ -84,7 +84,7 @@ public class BlobShadow : MonoBehaviour
     }
 
     // Paints a circle that fades out towards its edge
-    Texture2D BuildCircleTexture()
+    private Texture2D buildCircleTexture()
     {
         const int res = 128;
         Texture2D tex = new Texture2D(res, res, TextureFormat.RGBA32, false);
@@ -108,7 +108,7 @@ public class BlobShadow : MonoBehaviour
         return tex;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (blob == null) return;
 
@@ -141,12 +141,12 @@ public class BlobShadow : MonoBehaviour
     }
 
     // The blob lives outside the player, so tidy it up when he's hidden or destroyed
-    void OnDisable()
+    private void OnDisable()
     {
         if (blobRenderer != null) blobRenderer.enabled = false;
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (blob != null) Destroy(blob.gameObject);
     }

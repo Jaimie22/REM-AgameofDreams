@@ -35,7 +35,7 @@ public class DreamerBackdrop : MonoBehaviour
     public float mapYaw = -25f;
 
     [Header("Look")]
-    [Tooltip("How solid he is. Keep this low — he should be a presence, not a character.")]
+    [Tooltip("How solid he is. Keep this low â€” he should be a presence, not a character.")]
     [Range(0f, 1f)] public float opacity = 0.16f;
     [Tooltip("Tints him towards this colour, so he sits in the background.")]
     public Color tint = new Color(0.75f, 0.7f, 0.95f);
@@ -55,8 +55,8 @@ public class DreamerBackdrop : MonoBehaviour
     [Tooltip("While tuning, forces the map placement so you can see it from any view.")]
     public bool previewMapPlacement = false;
 
-    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
-    static readonly int ColorID = Shader.PropertyToID("_Color");
+    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int colorId = Shader.PropertyToID("_Color");
 
     GameObject dreamer;
     Renderer[] renderers;
@@ -69,20 +69,20 @@ public class DreamerBackdrop : MonoBehaviour
     float distance, side, height, currentScale, yaw;
     bool initialised;
 
-    void Start()
+    private void Start()
     {
         cam = Camera.main;
-        if (dreamerPrefab != null) BuildDreamer();
+        if (dreamerPrefab != null) buildDreamer();
     }
 
     // Builds the giant figure once, then just fades him in and out
-    void BuildDreamer()
+    private void buildDreamer()
     {
         dreamer = Instantiate(dreamerPrefab);
         dreamer.name = "DreamerBackdrop";
         dreamer.transform.localScale = Vector3.one * cubeScale;
 
-        StripGameplayComponents(dreamer);
+        stripGameplayComponents(dreamer);
 
         // Idle only, so he breathes but never moves
         Animator animator = dreamer.GetComponentInChildren<Animator>();
@@ -93,16 +93,16 @@ public class DreamerBackdrop : MonoBehaviour
         }
 
         renderers = dreamer.GetComponentsInChildren<Renderer>();
-        MakeTransparent();
+        makeTransparent();
 
-        SetOpacity(0f);
+        setOpacity(0f);
         dreamer.SetActive(false);
     }
 
     // Switches off anything that would make him behave like the player.
     // Disabling rather than destroying avoids RequireComponent conflicts,
     // and stops the scripts ever running their Start methods.
-    void StripGameplayComponents(GameObject obj)
+    private void stripGameplayComponents(GameObject obj)
     {
         // Every script except the Animator, which isn't a MonoBehaviour
         foreach (MonoBehaviour script in obj.GetComponentsInChildren<MonoBehaviour>(true))
@@ -119,7 +119,7 @@ public class DreamerBackdrop : MonoBehaviour
     }
 
     // Switches every material on him to transparent, so he can be faded
-    void MakeTransparent()
+    private void makeTransparent()
     {
         if (renderers == null) return;
 
@@ -148,13 +148,13 @@ public class DreamerBackdrop : MonoBehaviour
     }
 
     // Called by CubeWorld when entering or leaving the cube and map views
-    public void SetVisible(bool visible)
+    public void setVisible(bool visible)
     {
         wanted = visible;
     }
 
     // True when the top-down map is open
-    bool InMapView()
+    private bool inMapView()
     {
         if (previewMapPlacement) return true;
 
@@ -162,7 +162,7 @@ public class DreamerBackdrop : MonoBehaviour
         return world != null && world.CurrentMode == CubeWorld.Mode.Map;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (dreamer == null) return;
         if (cam == null) cam = Camera.main;
@@ -176,8 +176,8 @@ public class DreamerBackdrop : MonoBehaviour
         if (dreamer.activeSelf != visible) dreamer.SetActive(visible);
         if (!visible) return;
 
-        SetOpacity(currentOpacity);
-        UpdatePlacement();
+        setOpacity(currentOpacity);
+        updatePlacement();
 
         // Place him in the camera's own space, so he sits in the same part of
         // the frame whichever way the camera is looking
@@ -198,9 +198,9 @@ public class DreamerBackdrop : MonoBehaviour
     }
 
     // Eases between the two sets of placement values as the view changes
-    void UpdatePlacement()
+    private void updatePlacement()
     {
-        bool map = InMapView();
+        bool map = inMapView();
 
         float wantedDistance = map ? mapDistance : cubeDistance;
         float wantedSide = map ? mapSideOffset : cubeSideOffset;
@@ -229,7 +229,7 @@ public class DreamerBackdrop : MonoBehaviour
     }
 
     // Fades every part of him together, tinted towards the background
-    void SetOpacity(float value)
+    private void setOpacity(float value)
     {
         if (renderers == null) return;
 
@@ -242,13 +242,13 @@ public class DreamerBackdrop : MonoBehaviour
                 Color c = tint;
                 c.a = value;
 
-                if (mat.HasProperty(BaseColorID)) mat.SetColor(BaseColorID, c);
-                if (mat.HasProperty(ColorID)) mat.SetColor(ColorID, c);
+                if (mat.HasProperty(baseColorId)) mat.SetColor(baseColorId, c);
+                if (mat.HasProperty(colorId)) mat.SetColor(colorId, c);
             }
         }
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (dreamer != null) Destroy(dreamer);
     }

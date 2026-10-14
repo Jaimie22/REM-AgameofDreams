@@ -4,21 +4,21 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class AltarTrigger : MonoBehaviour
 {
-    void Reset()
+    private void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
     }
 
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        LevelObjectives.Instance?.DeliverToAltar();
+        LevelObjectives.Instance?.deliverToAltar();
     }
 
     // Also deliver if the player is already standing there when they collect one
-    void OnTriggerStay(Collider other)
+    private void OnTriggerStay(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        LevelObjectives.Instance?.DeliverToAltar();
+        LevelObjectives.Instance?.deliverToAltar();
     }
 }

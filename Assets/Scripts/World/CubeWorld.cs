@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// The "brain" of the game. Put this on the cube's root object (pivot at the cube's centre).
+// Attach to the cube root object (pivot at the cube centre).
 // Handles unlocking faces, generating levels, spinning the cube, and switching views.
 public class CubeWorld : MonoBehaviour
 {
@@ -72,12 +72,12 @@ public class CubeWorld : MonoBehaviour
     Vector3 savedLocalPosition;
     Quaternion savedLocalRotation;
 
-    void Awake()
+    private void Awake()
     {
         Instance = this;
     }
 
-    void Start()
+    private void Start()
     {
         // Create a fader automatically if none was assigned
         if (screenFader == null)
@@ -88,7 +88,7 @@ public class CubeWorld : MonoBehaviour
         for (int i = 0; i < faces.Length; i++)
         {
             faceSeeds[i] = Random.Range(int.MinValue, int.MaxValue);
-            GenerateFace(i);
+            generateFace(i);
         }
 
         // Starting on a later level counts as having unlocked everything before it
@@ -96,25 +96,25 @@ public class CubeWorld : MonoBehaviour
         highestUnlocked = startIndex;
 
         for (int i = 0; i < faces.Length; i++)
-            faces[i].SetUnlocked(unlockAllFaces || i <= highestUnlocked);
+            faces[i].setUnlocked(unlockAllFaces || i <= highestUnlocked);
 
-        StartCoroutine(StartSequence(startIndex));
+        StartCoroutine(startSequence(startIndex));
     }
 
     // Builds (or rebuilds) one face's layout, whichever generator it uses
-    void GenerateFace(int index)
+    private void generateFace(int index)
     {
         LevelGenerator generator = faces[index].GetComponent<LevelGenerator>();
-        if (generator != null) generator.Generate(faceSeeds[index]);
+        if (generator != null) generator.generate(faceSeeds[index]);
 
         MazeGenerator maze = faces[index].GetComponent<MazeGenerator>();
-        if (maze != null) maze.Generate(faceSeeds[index]);
+        if (maze != null) maze.generate(faceSeeds[index]);
 
         Physics.SyncTransforms(); // make sure the new colliders are in place
     }
 
     // Applies this level's gravity and jump height
-    void ApplyLevelRules(int index)
+    private void applyLevelRules(int index)
     {
         LevelTheme levelTheme = null;
 
@@ -125,10 +125,10 @@ public class CubeWorld : MonoBehaviour
         if (maze != null && maze.theme != null) levelTheme = maze.theme;
 
         if (levelTheme == null) return;
-        player.ApplyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
+        player.applyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
     }
 
-    void Update()
+    private void Update()
     {
         if (CurrentMode == Mode.Transitioning) return;
 
@@ -138,7 +138,7 @@ public class CubeWorld : MonoBehaviour
         // M toggles the map from anywhere
         if (kb != null && kb.mKey.wasPressedThisFrame)
         {
-            ToggleMap();
+            toggleMap();
             return;
         }
 
@@ -151,85 +151,85 @@ public class CubeWorld : MonoBehaviour
                 // Scroll down = out to the cube
                 if (scroll < 0f)
                 {
-                    GoToCubeView();
+                    goToCubeView();
                     return;
                 }
 
                 // Respawn if the player falls off the level
                 CubeFace face = faces[CurrentFaceIndex];
                 if (player.transform.position.y < face.transform.position.y - fallResetDistance)
-                    player.Spawn(face.spawnPoint);
+                    player.spawn(face.spawnPoint);
                 break;
 
             case Mode.Map:
                 // The map is fixed on one face, so there's no spinning here.
                 // Scroll down steps out to the cube, scroll up goes back into the level.
-                if (scroll < 0f) GoToCubeView();
-                else if (scroll > 0f) ReturnToLevel();
+                if (scroll < 0f) goToCubeView();
+                else if (scroll > 0f) returnToLevel();
                 break;
 
             case Mode.Overview:
                 // Hold left mouse and drag to spin the cube
                 if (mouse.leftButton.isPressed)
-                    DragRotate(mouse.delta.ReadValue());
+                    dragRotate(mouse.delta.ReadValue());
 
                 // Double-click a face to enter it
                 if (mouse.leftButton.wasPressedThisFrame)
-                    HandleClick(mouse.position.ReadValue());
+                    handleClick(mouse.position.ReadValue());
 
                 // Scroll up = enter whichever face is pointing at the camera
                 if (scroll > 0f)
-                    TryEnterFace(GetFaceFacingCamera());
+                    tryEnterFace(getFaceFacingCamera());
                 break;
         }
     }
 
     // M: open the map, or close it and go back to where the player was
-    void ToggleMap()
+    private void toggleMap()
     {
-        if (CurrentMode == Mode.Playing) GoToMapView();
-        else ReturnToLevel();
+        if (CurrentMode == Mode.Playing) goToMapView();
+        else returnToLevel();
     }
 
     // Straight down onto the face the player is on
-    public void GoToMapView()
+    public void goToMapView()
     {
         if (CurrentFaceIndex < 0) return;
 
-        SaveCurrentSpot();
-        player.Hide();
-        dreamCamera.SetMapView(faces[CurrentFaceIndex].transform);
+        saveCurrentSpot();
+        player.hide();
+        dreamCamera.setMapView(faces[CurrentFaceIndex].transform);
 
-        backgroundGradient?.SetVisible(true);
-        dreamerBackdrop?.SetVisible(true);
-        moodController?.SetAwayFromLevel(true);
+        backgroundGradient?.setVisible(true);
+        dreamerBackdrop?.setVisible(true);
+        moodController?.setAwayFromLevel(true);
 
         CurrentMode = Mode.Map;
     }
 
     // Pull back to the whole cube, where it can be spun and faces picked
-    public void GoToCubeView()
+    public void goToCubeView()
     {
-        SaveCurrentSpot();
-        player.Hide();
-        dreamCamera.SetOverview();
+        saveCurrentSpot();
+        player.hide();
+        dreamCamera.setOverview();
 
-        backgroundGradient?.SetVisible(true);
-        dreamerBackdrop?.SetVisible(true);
-        moodController?.SetAwayFromLevel(true);
+        backgroundGradient?.setVisible(true);
+        dreamerBackdrop?.setVisible(true);
+        moodController?.setAwayFromLevel(true);
 
         CurrentMode = Mode.Overview;
     }
 
     // Back into the level, exactly where the player left off
-    void ReturnToLevel()
+    private void returnToLevel()
     {
         if (!hasSavedSpot || CurrentFaceIndex < 0) return;
-        StartCoroutine(ReturnToSavedSpot());
+        StartCoroutine(returnToSavedSpot());
     }
 
     // Remembers where the player is, relative to the face they're on
-    void SaveCurrentSpot()
+    private void saveCurrentSpot()
     {
         if (CurrentFaceIndex < 0 || player == null) return;
         if (CurrentMode != Mode.Playing) return; // already saved on the way out
@@ -241,15 +241,15 @@ public class CubeWorld : MonoBehaviour
     }
 
     // Turns the cube back and drops the player exactly where they left off
-    IEnumerator ReturnToSavedSpot()
+    private IEnumerator returnToSavedSpot()
     {
         CurrentMode = Mode.Transitioning;
         CubeFace face = faces[CurrentFaceIndex];
 
         // The fog rolls back in as the cube turns
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
-        moodController?.SetAwayFromLevel(false);
+        backgroundGradient?.setVisible(false);
+        dreamerBackdrop?.setVisible(false);
+        moodController?.setAwayFromLevel(false);
 
         // The cube may have been spun while away, so turn it back
         Quaternion start = transform.rotation;
@@ -268,18 +268,18 @@ public class CubeWorld : MonoBehaviour
         Vector3 worldPos = face.transform.TransformPoint(savedLocalPosition);
         Quaternion worldRot = face.transform.rotation * savedLocalRotation;
 
-        ApplyLevelRules(CurrentFaceIndex);
-        player.Spawn(worldPos, worldRot);
-        dreamCamera.SetPlaying(player.transform);
+        applyLevelRules(CurrentFaceIndex);
+        player.spawn(worldPos, worldRot);
+        dreamCamera.setPlaying(player.transform);
 
         CurrentMode = Mode.Playing;
     }
 
     // Game start: place everything instantly while the screen is black, then fade in
-    IEnumerator StartSequence(int index)
+    private IEnumerator startSequence(int index)
     {
         CurrentMode = Mode.Transitioning;
-        screenFader.SetAlpha(1f);
+        screenFader.setAlpha(1f);
 
         CurrentFaceIndex = index;
         CubeFace face = faces[index];
@@ -289,38 +289,38 @@ public class CubeWorld : MonoBehaviour
         Physics.SyncTransforms();
 
         // The game opens inside a level, not in the cube view
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
-        moodController?.SetAwayFromLevel(false);
+        backgroundGradient?.setVisible(false);
+        dreamerBackdrop?.setVisible(false);
+        moodController?.setAwayFromLevel(false);
 
-        ApplyLevelRules(index);
-        player.Spawn(face.spawnPoint);
-        dreamCamera.SetPlaying(player.transform);
-        dreamCamera.SnapToTarget();
-        ApplyMood(index, true);
+        applyLevelRules(index);
+        player.spawn(face.spawnPoint);
+        dreamCamera.setPlaying(player.transform);
+        dreamCamera.snapToTarget();
+        applyMood(index, true);
 
         yield return null; // let one frame settle before revealing
 
         CurrentMode = Mode.Playing;
-        yield return screenFader.Fade(1f, 0f, startFadeDuration);
+        yield return screenFader.fade(1f, 0f, startFadeDuration);
     }
 
     // Switches the scene's fog and lighting to match a face
-    void ApplyMood(int index, bool instant)
+    private void applyMood(int index, bool instant)
     {
         if (moodController == null) return;
 
         FaceMood mood = faces[index].GetComponent<FaceMood>();
         if (mood == null) return;
 
-        if (instant) moodController.SnapToMood(mood);
-        else moodController.SetMood(mood);
+        if (instant) moodController.snapToMood(mood);
+        else moodController.setMood(mood);
     }
 
     // Detects a double-click on the same face
-    void HandleClick(Vector2 screenPos)
+    private void handleClick(Vector2 screenPos)
     {
-        int index = GetFaceUnderMouse(screenPos);
+        int index = getFaceUnderMouse(screenPos);
         if (index < 0)
         {
             lastClickedFace = -1;
@@ -334,14 +334,15 @@ public class CubeWorld : MonoBehaviour
         lastClickTime = Time.unscaledTime;
 
         if (isDoubleClick)
+
         {
             lastClickedFace = -1; // reset so a triple-click doesn't count twice
-            TryEnterFace(index);
+            tryEnterFace(index);
         }
     }
 
     // Fires a ray from the mouse and works out which face of the cube it hit
-    int GetFaceUnderMouse(Vector2 screenPos)
+    private int getFaceUnderMouse(Vector2 screenPos)
     {
         Ray ray = dreamCamera.Cam.ScreenPointToRay(screenPos);
         if (!Physics.Raycast(ray, out RaycastHit hit, 1000f)) return -1;
@@ -353,6 +354,7 @@ public class CubeWorld : MonoBehaviour
         float bestDot = -2f;
 
         for (int i = 0; i < faces.Length; i++)
+
         {
             float dot = Vector3.Dot(faces[i].transform.up, dirFromCenter);
             if (dot > bestDot)
@@ -365,25 +367,25 @@ public class CubeWorld : MonoBehaviour
     }
 
     // Enters a face if it's unlocked
-    void TryEnterFace(int index)
+    private void tryEnterFace(int index)
     {
         if (CurrentMode != Mode.Overview) return;
 
         // Picking the face we were already on means going back to that exact spot
         if (index == CurrentFaceIndex && hasSavedSpot)
         {
-            StartCoroutine(ReturnToSavedSpot());
+            StartCoroutine(returnToSavedSpot());
             return;
         }
 
         if (faces[index].IsUnlocked)
-            StartCoroutine(EnterFace(index));
+            StartCoroutine(enterFace(index));
         else
             Debug.Log("That dream is still locked.");
     }
 
     // Spins the cube relative to the camera's view, so dragging always feels natural
-    void DragRotate(Vector2 delta)
+    private void dragRotate(Vector2 delta)
     {
         Transform cam = dreamCamera.transform;
         transform.Rotate(cam.up, -delta.x * dragRotateSpeed, Space.World);
@@ -391,13 +393,14 @@ public class CubeWorld : MonoBehaviour
     }
 
     // Finds the face whose "up" points most directly at the camera
-    int GetFaceFacingCamera()
+    private int getFaceFacingCamera()
     {
         Vector3 camPos = dreamCamera.transform.position;
         int best = 0;
         float bestDot = -2f;
 
         for (int i = 0; i < faces.Length; i++)
+
         {
             Vector3 toCam = (camPos - faces[i].transform.position).normalized;
             float dot = Vector3.Dot(faces[i].transform.up, toCam);
@@ -411,16 +414,16 @@ public class CubeWorld : MonoBehaviour
     }
 
     // Turns the cube so the chosen face is on top, then drops the player in
-    IEnumerator EnterFace(int index)
+    private IEnumerator enterFace(int index)
     {
         CurrentMode = Mode.Transitioning;
         CurrentFaceIndex = index;
         CubeFace face = faces[index];
 
         // The backdrop fades and the level's fog rolls in as the cube turns
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
-        moodController?.SetAwayFromLevel(false);
+        backgroundGradient?.setVisible(false);
+        dreamerBackdrop?.setVisible(false);
+        moodController?.setAwayFromLevel(false);
 
         // A fresh start on this face, so any saved spot is no longer valid
         hasSavedSpot = false;
@@ -429,11 +432,11 @@ public class CubeWorld : MonoBehaviour
         if (regenerateOnEveryEntry)
         {
             faceSeeds[index] = Random.Range(int.MinValue, int.MaxValue);
-            GenerateFace(index);
+            generateFace(index);
         }
 
         // Start blending the mood while the cube turns
-        ApplyMood(index, false);
+        applyMood(index, false);
 
         // The rotation that puts this face flat on top, in the orientation you built it
         Quaternion start = transform.rotation;
@@ -448,14 +451,15 @@ public class CubeWorld : MonoBehaviour
         transform.rotation = target;
         Physics.SyncTransforms();
 
-        ApplyLevelRules(index);
-        player.Spawn(face.spawnPoint);
-        dreamCamera.SetPlaying(player.transform);
+        applyLevelRules(index);
+        player.spawn(face.spawnPoint);
+        dreamCamera.setPlaying(player.transform);
         CurrentMode = Mode.Playing;
     }
 
+
     // Called by the DreamDoor when the player walks into it
-    public void CompleteCurrentLevel()
+    public void completeCurrentLevel()
     {
         if (CurrentMode != Mode.Playing) return;
 
@@ -468,9 +472,9 @@ public class CubeWorld : MonoBehaviour
         else if (next > highestUnlocked)
         {
             highestUnlocked = next;
-            faces[next].SetUnlocked(true); // Lift the fog on the next face
+            faces[next].setUnlocked(true); // Lift the fog on the next face
         }
 
-        GoToCubeView();
+        goToCubeView();
     }
 }

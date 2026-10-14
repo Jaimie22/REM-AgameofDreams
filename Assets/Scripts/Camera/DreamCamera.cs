@@ -40,13 +40,13 @@ public class DreamCamera : MonoBehaviour
     bool playing;
     Vector3 moveVelocity;
 
-    void Awake()
+    private void Awake()
     {
         Cam = GetComponent<Camera>();
     }
 
     // Pull back to the whole cube, free to be spun
-    public void SetOverview()
+    public void setOverview()
     {
         playing = false;
         followTarget = null;
@@ -54,14 +54,14 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Look straight down onto one face, as a map
-    public void SetMapView(Transform face)
+    public void setMapView(Transform face)
     {
         playing = false;
         followTarget = null;
         mapFace = face;
     }
 
-    public void SetPlaying(Transform target)
+    public void setPlaying(Transform target)
     {
         playing = true;
         followTarget = target;
@@ -69,17 +69,17 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Jumps straight to the current view with no smoothing
-    public void SnapToTarget()
+    public void snapToTarget()
     {
-        GetTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
+        getTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
         transform.SetPositionAndRotation(pos, rot);
         Cam.fieldOfView = fov;
         moveVelocity = Vector3.zero;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
-        GetTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
+        getTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
 
         transform.position = Vector3.SmoothDamp(transform.position, pos, ref moveVelocity, moveSmoothTime);
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, rotateSpeed * Time.deltaTime);
@@ -87,7 +87,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Works out where the camera *should* be for the current view
-    void GetTargetPose(out Vector3 pos, out Quaternion rot, out float fov)
+    private void getTargetPose(out Vector3 pos, out Quaternion rot, out float fov)
     {
         // Following the player
         if (playing && followTarget != null)

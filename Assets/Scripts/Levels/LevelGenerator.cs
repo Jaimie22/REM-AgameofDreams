@@ -52,7 +52,7 @@ public class LevelGenerator : MonoBehaviour
 
     [Tooltip("How far around the altar counts as delivering.")]
     public float altarTriggerRadius = 2.5f;
-    
+
     [Tooltip("Optional. A model to use instead of a plain block.")]
     public GameObject altarPrefab;
 
@@ -78,15 +78,15 @@ public class LevelGenerator : MonoBehaviour
     HashSet<int> usedCells = new HashSet<int>();
 
     [ContextMenu("Generate Preview")]
-    void GeneratePreview()
+    private void generatePreview()
     {
-        Generate(Random.Range(int.MinValue, int.MaxValue));
+        generate(Random.Range(int.MinValue, int.MaxValue));
     }
 
     [ContextMenu("Clear Generated")]
-    public void ClearGenerated()
+    public void clearGenerated()
     {
-        Transform content = GetContent();
+        Transform content = getContent();
         if (content == null) return;
 
         Transform old = content.Find(GeneratedName);
@@ -94,11 +94,11 @@ public class LevelGenerator : MonoBehaviour
 
         // Rename first, because Destroy only takes effect at the end of the frame
         old.name = "GeneratedOld";
-        SafeDestroy(old.gameObject);
+        safeDestroy(old.gameObject);
     }
 
     // Builds the level. The same seed always gives the same layout.
-    public void Generate(int seed)
+    public void generate(int seed)
     {
         if (theme == null)
         {
@@ -108,14 +108,14 @@ public class LevelGenerator : MonoBehaviour
 
         rng = new System.Random(useFixedSeed ? fixedSeed : seed);
 
-        Transform content = GetContent();
+        Transform content = getContent();
         if (content == null)
         {
             Debug.LogError("LevelGenerator: no LevelContent found under " + name);
             return;
         }
 
-        ClearGenerated();
+        clearGenerated();
         root = new GameObject(GeneratedName).transform;
         root.SetParent(content, false);
 
@@ -128,39 +128,39 @@ public class LevelGenerator : MonoBehaviour
         // A maze can wander into a short route, so try a few times for a long one
         for (int attempt = 0; attempt < 8; attempt++)
         {
-            CarveMaze();
-            if (DepthOf(exitCell) >= theme.minRouteCells) break;
+            carveMaze();
+            if (depthOf(exitCell) >= theme.minRouteCells) break;
         }
 
-        BuildCells();
-        PlaceDoorAndSpawn();
+        buildCells();
+        placeDoorAndSpawn();
 
         // The new floors need to be registered with physics before we can measure them
         Physics.SyncTransforms();
 
-        PlaceFragments();
-        ApplyFaceColor();
+        placeFragments();
+        applyFaceColor();
     }
 
     // --- Grid maths -------------------------------------------------
 
-    int Index(int x, int y) { return x + y * gw; }
-    int CellX(int c) { return c % gw; }
-    int CellY(int c) { return c / gw; }
-    bool InGrid(int x, int y) { return x >= 0 && x < gw && y >= 0 && y < gh; }
+    private int index(int x, int y) { return x + y * gw; }
+    private int cellX(int c) { return c % gw; }
+    private int cellY(int c) { return c / gw; }
+    private bool inGrid(int x, int y) { return x >= 0 && x < gw && y >= 0 && y < gh; }
 
     // The world position of a cell's floor surface
-    Vector3 CellCenter(int c, float height)
+    private Vector3 cellCenter(int c, float height)
     {
-        float x = (CellX(c) - (gw - 1) * 0.5f) * cell;
-        float z = (CellY(c) - (gh - 1) * 0.5f) * cell;
+        float x = (cellX(c) - (gw - 1) * 0.5f) * cell;
+        float z = (cellY(c) - (gh - 1) * 0.5f) * cell;
         return new Vector3(x, height, z);
     }
 
     // --- Maze carving -----------------------------------------------
 
     // Depth-first maze over the whole grid, which gives long winding routes
-    void CarveMaze()
+    private void carveMaze()
     {
         int total = gw * gh;
         parent = new int[total];
@@ -175,7 +175,7 @@ public class LevelGenerator : MonoBehaviour
             heightCache[i] = float.NaN;
         }
 
-        startCell = Index(gw / 2, 0); // near edge, middle
+        startCell = index(gw / 2, 0); // near edge, middle
         visited[startCell] = true;
         depthCache[startCell] = 0;
         heightCache[startCell] = 0f;
@@ -186,7 +186,7 @@ public class LevelGenerator : MonoBehaviour
         while (stack.Count > 0)
         {
             int current = stack.Peek();
-            List<int> options = UnvisitedNeighbours(current, visited);
+            List<int> options = unvisitedNeighbours(current, visited);
 
             if (options.Count == 0)
             {
@@ -201,74 +201,74 @@ public class LevelGenerator : MonoBehaviour
         }
 
         // The exit goes on the far edge, so the route crosses the whole face
-        exitCell = Index(0, gh - 1);
+        exitCell = index(0, gh - 1);
         for (int x = 0; x < gw; x++)
         {
-            int c = Index(x, gh - 1);
-            if (DepthOf(c) > DepthOf(exitCell)) exitCell = c;
+            int c = index(x, gh - 1);
+            if (depthOf(c) > depthOf(exitCell)) exitCell = c;
         }
 
         // Carve the main route, then fill the rest of the face
         carved.Clear();
         deadEnds.Clear();
 
-        CarveChain(exitCell);
-        CarveBranches();
-        CarveRooms();
+        carveChain(exitCell);
+        carveBranches();
+        carveRooms();
     }
 
-    List<int> UnvisitedNeighbours(int c, bool[] visited)
+    private List<int> unvisitedNeighbours(int c, bool[] visited)
     {
         List<int> list = new List<int>();
-        int x = CellX(c), y = CellY(c);
+        int x = cellX(c), y = cellY(c);
 
-        if (InGrid(x + 1, y) && !visited[Index(x + 1, y)]) list.Add(Index(x + 1, y));
-        if (InGrid(x - 1, y) && !visited[Index(x - 1, y)]) list.Add(Index(x - 1, y));
-        if (InGrid(x, y + 1) && !visited[Index(x, y + 1)]) list.Add(Index(x, y + 1));
-        if (InGrid(x, y - 1) && !visited[Index(x, y - 1)]) list.Add(Index(x, y - 1));
+        if (inGrid(x + 1, y) && !visited[index(x + 1, y)]) list.Add(index(x + 1, y));
+        if (inGrid(x - 1, y) && !visited[index(x - 1, y)]) list.Add(index(x - 1, y));
+        if (inGrid(x, y + 1) && !visited[index(x, y + 1)]) list.Add(index(x, y + 1));
+        if (inGrid(x, y - 1) && !visited[index(x, y - 1)]) list.Add(index(x, y - 1));
 
         return list;
     }
 
     // How many cells from the start, following the carve tree back
-    int DepthOf(int c)
+    private int depthOf(int c)
     {
         if (c == startCell) return 0;
         if (depthCache[c] >= 0) return depthCache[c];
         if (parent[c] < 0) return 0;
 
-        depthCache[c] = DepthOf(parent[c]) + 1;
+        depthCache[c] = depthOf(parent[c]) + 1;
         return depthCache[c];
     }
 
     // Each cell sits slightly above or below the one it was carved from,
     // so neighbours are always within one step of each other
-    float HeightOf(int c)
+    private float heightOf(int c)
     {
         if (c == startCell) return 0f;
         if (!float.IsNaN(heightCache[c])) return heightCache[c];
         if (parent[c] < 0) return 0f;
 
         float step = (float)(rng.NextDouble() * 2.0 - 1.0) * theme.stepHeight;
-        float h = Mathf.Clamp(HeightOf(parent[c]) + step, -theme.maxHeightDrift, theme.maxHeightDrift);
+        float h = Mathf.Clamp(heightOf(parent[c]) + step, -theme.maxHeightDrift, theme.maxHeightDrift);
 
         heightCache[c] = h;
         return h;
     }
 
     // Carves a cell and everything between it and the already-carved area
-    void CarveChain(int tip)
+    private void carveChain(int tip)
     {
         int c = tip;
         while (c >= 0 && !carved.ContainsKey(c))
         {
-            carved[c] = HeightOf(c);
+            carved[c] = heightOf(c);
             c = parent[c];
         }
     }
 
     // How far a cell is from carved ground, following the tree back
-    int DistanceToCarved(int c)
+    private int distanceToCarved(int c)
     {
         int steps = 0;
         while (c >= 0 && !carved.ContainsKey(c))
@@ -280,7 +280,7 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Keeps carving until the face is filled to the coverage setting
-    void CarveBranches()
+    private void carveBranches()
     {
         int total = gw * gh;
         int target = Mathf.RoundToInt(total * Mathf.Clamp01(theme.coverage));
@@ -289,7 +289,7 @@ public class LevelGenerator : MonoBehaviour
         for (int i = 0; i < total; i++)
             if (!carved.ContainsKey(i)) candidates.Add(i);
 
-        Shuffle(candidates);
+        shuffle(candidates);
 
         // Pass 1: short spurs off the existing route, which read as proper dead ends
         foreach (int c in candidates)
@@ -297,10 +297,10 @@ public class LevelGenerator : MonoBehaviour
             if (carved.Count >= target) return;
             if (carved.ContainsKey(c)) continue;
 
-            int distance = DistanceToCarved(c);
+            int distance = distanceToCarved(c);
             if (distance < 1 || distance > theme.maxBranchLength) continue;
 
-            CarveChain(c);
+            carveChain(c);
             deadEnds.Add(c);
         }
 
@@ -310,13 +310,13 @@ public class LevelGenerator : MonoBehaviour
             if (carved.Count >= target) return;
             if (carved.ContainsKey(c)) continue;
 
-            CarveChain(c);
+            carveChain(c);
             deadEnds.Add(c);
         }
     }
 
     // Opens some cells out into wider rooms by flattening their neighbours
-    void CarveRooms()
+    private void carveRooms()
     {
         List<int> existing = new List<int>(carved.Keys);
 
@@ -326,21 +326,21 @@ public class LevelGenerator : MonoBehaviour
             if (rng.NextDouble() > theme.roomChance) continue;
 
             float h = carved[c];
-            int x = CellX(c), y = CellY(c);
+            int x = cellX(c), y = cellY(c);
 
             // Room cells share the centre cell's height, so the floor stays flat
-            TryCarveFlat(x + 1, y, h);
-            TryCarveFlat(x - 1, y, h);
-            TryCarveFlat(x, y + 1, h);
-            TryCarveFlat(x, y - 1, h);
+            tryCarveFlat(x + 1, y, h);
+            tryCarveFlat(x - 1, y, h);
+            tryCarveFlat(x, y + 1, h);
+            tryCarveFlat(x, y - 1, h);
         }
     }
 
-    void TryCarveFlat(int x, int y, float height)
+    private void tryCarveFlat(int x, int y, float height)
     {
-        if (!InGrid(x, y)) return;
+        if (!inGrid(x, y)) return;
 
-        int c = Index(x, y);
+        int c = index(x, y);
         if (carved.ContainsKey(c)) return;
 
         carved[c] = height;
@@ -348,7 +348,7 @@ public class LevelGenerator : MonoBehaviour
 
     // --- Geometry ---------------------------------------------------
 
-    void BuildCells()
+    private void buildCells()
     {
         floorRenderers.Clear();
         wallCells.Clear();
@@ -360,22 +360,22 @@ public class LevelGenerator : MonoBehaviour
         {
             int c = pair.Key;
             float h = baseHeight + pair.Value;
-            Vector3 center = CellCenter(c, h);
+            Vector3 center = cellCenter(c, h);
 
             bool special = c == startCell || c == exitCell;
-            Vector3 dir = DirectionFromParent(c);
+            Vector3 dir = directionFromParent(c);
 
             // Occasionally split the floor, leaving a gap to jump
             bool gap = !special && dir != Vector3.zero && rng.NextDouble() < theme.gapChance;
 
             if (gap)
             {
-                MakeSplitFloor(c, center, dir);
+                makeSplitFloor(c, center, dir);
                 gapCells.Add(c);
             }
             else
             {
-                MakeFloor("Floor_" + c, center, new Vector3(cell, 1f, cell));
+                makeFloor("Floor_" + c, center, new Vector3(cell, 1f, cell));
             }
 
             if (special || gap) continue;
@@ -383,7 +383,7 @@ public class LevelGenerator : MonoBehaviour
             // A wall across the cell with a gap to walk through
             if (dir != Vector3.zero && rng.NextDouble() < theme.wallChance)
             {
-                MakeWall(c, center, dir);
+                makeWall(c, center, dir);
                 wallCells.Add(c);
             }
 
@@ -395,7 +395,7 @@ public class LevelGenerator : MonoBehaviour
                 float oz = (float)(rng.NextDouble() - 0.5) * cell * 0.6f;
 
                 Vector3 pos = center + new Vector3(ox, theme.pillarSize, oz);
-                GameObject pillar = MakeCube("Pillar_" + c + "_" + p, pos,
+                GameObject pillar = makeCube("Pillar_" + c + "_" + p, pos,
                     new Vector3(theme.pillarSize, theme.pillarSize * 2f, theme.pillarSize),
                     theme.wallMaterial);
 
@@ -406,33 +406,33 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Which way the player travels through this cell
-    Vector3 DirectionFromParent(int c)
+    private Vector3 directionFromParent(int c)
     {
         if (c == startCell || parent[c] < 0) return Vector3.zero;
 
         int p = parent[c];
         if (!carved.ContainsKey(p)) return Vector3.zero;
 
-        int dx = CellX(c) - CellX(p);
-        int dy = CellY(c) - CellY(p);
+        int dx = cellX(c) - cellX(p);
+        int dy = cellY(c) - cellY(p);
         return new Vector3(dx, 0f, dy).normalized;
     }
 
     // Two slabs with a gap between them, running across the travel direction
-    void MakeSplitFloor(int c, Vector3 center, Vector3 dir)
+    private void makeSplitFloor(int c, Vector3 center, Vector3 dir)
     {
-        float gap = Mathf.Clamp(RandomRange(theme.gapSize), 0.5f, cell - 1f);
+        float gap = Mathf.Clamp(randomRange(theme.gapSize), 0.5f, cell - 1f);
         float piece = (cell - gap) * 0.5f;
         float offset = gap * 0.5f + piece * 0.5f;
 
-        Vector3 size = AxisSize(dir, piece, cell);
+        Vector3 size = axisSize(dir, piece, cell);
 
-        MakeFloor("Floor_" + c + "_A", center - dir * offset, size);
-        MakeFloor("Floor_" + c + "_B", center + dir * offset, size);
+        makeFloor("Floor_" + c + "_A", center - dir * offset, size);
+        makeFloor("Floor_" + c + "_B", center + dir * offset, size);
     }
 
     // A wall across the cell, with an opening somewhere along it
-    void MakeWall(int c, Vector3 center, Vector3 dir)
+    private void makeWall(int c, Vector3 center, Vector3 dir)
     {
         Vector3 cross = Vector3.Cross(Vector3.up, dir);
 
@@ -444,43 +444,43 @@ public class LevelGenerator : MonoBehaviour
 
         if (leftWidth > 0.3f)
         {
-            Vector3 size = AxisSize(dir, 0.8f, leftWidth);
+            Vector3 size = axisSize(dir, 0.8f, leftWidth);
             size.y = theme.wallHeight;
             Vector3 pos = center + cross * (-width * 0.5f + leftWidth * 0.5f)
                                  + Vector3.up * theme.wallHeight * 0.5f;
-            MakeCube("Wall_" + c + "_L", pos, size, theme.wallMaterial);
+            makeCube("Wall_" + c + "_L", pos, size, theme.wallMaterial);
         }
 
         if (rightWidth > 0.3f)
         {
-            Vector3 size = AxisSize(dir, 0.8f, rightWidth);
+            Vector3 size = axisSize(dir, 0.8f, rightWidth);
             size.y = theme.wallHeight;
             Vector3 pos = center + cross * (width * 0.5f - rightWidth * 0.5f)
                                  + Vector3.up * theme.wallHeight * 0.5f;
-            MakeCube("Wall_" + c + "_R", pos, size, theme.wallMaterial);
+            makeCube("Wall_" + c + "_R", pos, size, theme.wallMaterial);
         }
     }
 
-    void PlaceDoorAndSpawn()
+    private void placeDoorAndSpawn()
     {
         // Spawn point on the starting cell
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.spawnPoint != null)
         {
             float startHeight = baseHeight + carved[startCell];
-            face.spawnPoint.localPosition = CellCenter(startCell, startHeight) + Vector3.up * 0.2f;
+            face.spawnPoint.localPosition = cellCenter(startCell, startHeight) + Vector3.up * 0.2f;
             face.spawnPoint.localRotation = Quaternion.identity;
         }
     }
 
     // Builds the altar, the fragments and the (hidden) door
-    void PlaceFragments()
+    private void placeFragments()
     {
         int wanted = theme.collectibles;
 
         // --- The altar, on the exit cell so it's a clear destination ---
         float exitHeight = baseHeight + carved[exitCell];
-        Vector3 altarPos = CellCenter(exitCell, exitHeight);
+        Vector3 altarPos = cellCenter(exitCell, exitHeight);
 
         GameObject altarObj;
         if (altarPrefab != null)
@@ -511,10 +511,10 @@ public class LevelGenerator : MonoBehaviour
         triggerObj.AddComponent<AltarTrigger>();
 
         // --- The door, placed beside the altar and hidden for now ---
-        Vector3 doorDir = DirectionFromParent(exitCell);
+        Vector3 doorDir = directionFromParent(exitCell);
         if (doorDir == Vector3.zero) doorDir = Vector3.forward;
 
-        GameObject door = MakeCube("DreamDoor", altarPos + doorDir * cell * 0.4f + Vector3.up * 1.5f,
+        GameObject door = makeCube("DreamDoor", altarPos + doorDir * cell * 0.4f + Vector3.up * 1.5f,
                                    new Vector3(3f, 3f, 0.5f), theme.doorMaterial);
         door.transform.localRotation = Quaternion.LookRotation(doorDir);
         door.GetComponent<Collider>().isTrigger = true;
@@ -525,20 +525,20 @@ public class LevelGenerator : MonoBehaviour
         {
             Debug.LogWarning("LevelGenerator: '" + theme.name +
                              "' has Collectibles set to 0, so no dream fragments were placed.");
-            LevelObjectives.Instance?.SetUpLevel(0, altar, door);
+            LevelObjectives.Instance?.setUpLevel(0, altar, door);
             return;
         }
 
         // Dead ends are the best hiding spots, then anywhere else that's suitable
         List<int> order = new List<int>();
         foreach (int c in deadEnds)
-            if (IsCandidateCell(c) && !order.Contains(c)) order.Add(c);
-        Shuffle(order);
+            if (isCandidateCell(c) && !order.Contains(c)) order.Add(c);
+        shuffle(order);
 
         List<int> extras = new List<int>();
         foreach (int c in carved.Keys)
-            if (IsCandidateCell(c) && !order.Contains(c)) extras.Add(c);
-        Shuffle(extras);
+            if (isCandidateCell(c) && !order.Contains(c)) extras.Add(c);
+        shuffle(extras);
 
         order.AddRange(extras);
 
@@ -548,9 +548,9 @@ public class LevelGenerator : MonoBehaviour
         foreach (int c in order)
         {
             if (placed >= wanted) break;
-            if (!TryFindSpot(c, out Vector3 spot)) continue;
+            if (!tryFindSpot(c, out Vector3 spot)) continue;
 
-            SpawnFragment(placed, spot);
+            spawnFragment(placed, spot);
             usedCells.Add(c);
             placed++;
         }
@@ -563,12 +563,12 @@ public class LevelGenerator : MonoBehaviour
                 if (placed >= wanted) break;
                 if (usedCells.Contains(c)) continue;
 
-                ClearPillars(c);
+                clearPillars(c);
                 Physics.SyncTransforms();
 
-                if (!TryFindSpot(c, out Vector3 spot)) continue;
+                if (!tryFindSpot(c, out Vector3 spot)) continue;
 
-                SpawnFragment(placed, spot);
+                spawnFragment(placed, spot);
                 usedCells.Add(c);
                 placed++;
             }
@@ -579,11 +579,11 @@ public class LevelGenerator : MonoBehaviour
                              " fragments. Try raising Coverage or lowering Wall Chance.");
 
         // The altar asks for what actually got placed, so the level can always be finished
-        LevelObjectives.Instance?.SetUpLevel(placed, altar, door);
+        LevelObjectives.Instance?.setUpLevel(placed, altar, door);
     }
 
     // Cells that could hold a fragment: solid floor, not the start or the exit
-    bool IsCandidateCell(int c)
+    private bool isCandidateCell(int c)
     {
         if (!carved.ContainsKey(c)) return false;
         if (c == startCell || c == exitCell) return false;
@@ -595,10 +595,10 @@ public class LevelGenerator : MonoBehaviour
 
     // Looks for a spot in the cell that isn't inside a pillar,
     // sitting on the real floor surface rather than a calculated height
-    bool TryFindSpot(int c, out Vector3 spot)
+    private bool tryFindSpot(int c, out Vector3 spot)
     {
         float guessHeight = baseHeight + carved[c];
-        Vector3 center = CellCenter(c, guessHeight);
+        Vector3 center = cellCenter(c, guessHeight);
 
         // Try the middle first, then a ring of offsets around it
         List<Vector3> tries = new List<Vector3> { center };
@@ -614,10 +614,10 @@ public class LevelGenerator : MonoBehaviour
 
         foreach (Vector3 candidate in tries)
         {
-            if (!IsClearOfPillars(c, candidate, needed)) continue;
+            if (!isClearOfPillars(c, candidate, needed)) continue;
 
             // Find the actual surface under this spot, so nothing ends up buried
-            float surface = FindSurfaceHeight(candidate, guessHeight);
+            float surface = findSurfaceHeight(candidate, guessHeight);
 
             spot = new Vector3(candidate.x, surface + fragmentHeight, candidate.z);
             return true;
@@ -629,7 +629,7 @@ public class LevelGenerator : MonoBehaviour
 
     // Casts a ray down onto the generated floor and returns its top surface,
     // falling back to the calculated height if nothing is hit
-    float FindSurfaceHeight(Vector3 localPos, float fallback)
+    private float findSurfaceHeight(Vector3 localPos, float fallback)
     {
         // Start well above the spot, in world space, pointing at the face
         Vector3 worldStart = root.TransformPoint(localPos + Vector3.up * 10f);
@@ -647,7 +647,7 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // True if the spot is far enough from every pillar in this cell
-    bool IsClearOfPillars(int c, Vector3 pos, float needed)
+    private bool isClearOfPillars(int c, Vector3 pos, float needed)
     {
         if (!pillarsByCell.ContainsKey(c)) return true;
 
@@ -665,18 +665,18 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Removes a cell's pillars so a fragment can fit
-    void ClearPillars(int c)
+    private void clearPillars(int c)
     {
         if (!pillarsByCell.ContainsKey(c)) return;
 
         foreach (GameObject pillar in pillarsByCell[c])
-            SafeDestroy(pillar);
+            safeDestroy(pillar);
 
         pillarsByCell[c].Clear();
     }
 
     // Builds one fragment in the chosen shape
-    void SpawnFragment(int number, Vector3 localPos)
+    private void spawnFragment(int number, Vector3 localPos)
     {
         GameObject go;
 
@@ -728,14 +728,14 @@ public class LevelGenerator : MonoBehaviour
     // --- Building blocks --------------------------------------------
 
     // Floor slabs hang below the walking surface, so their tops are the ground
-    void MakeFloor(string name, Vector3 center, Vector3 size)
+    private void makeFloor(string name, Vector3 center, Vector3 size)
     {
         Vector3 pos = center - new Vector3(0f, size.y * 0.5f, 0f);
-        GameObject go = MakeCube(name, pos, size, theme.floorMaterial);
+        GameObject go = makeCube(name, pos, size, theme.floorMaterial);
         floorRenderers.Add(go.GetComponent<Renderer>());
     }
 
-    GameObject MakeCube(string name, Vector3 localPos, Vector3 size, Material mat)
+    private GameObject makeCube(string name, Vector3 localPos, Vector3 size, Material mat)
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = name;
@@ -747,18 +747,18 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Works out which axis the size goes on, depending on which way the cell points
-    Vector3 AxisSize(Vector3 dir, float along, float across)
+    private Vector3 axisSize(Vector3 dir, float along, float across)
     {
         bool alongX = Mathf.Abs(dir.x) > 0.5f;
         return alongX ? new Vector3(along, 1f, across) : new Vector3(across, 1f, along);
     }
 
-    float RandomRange(Vector2 range)
+    private float randomRange(Vector2 range)
     {
         return Mathf.Lerp(range.x, range.y, (float)rng.NextDouble());
     }
 
-    void Shuffle(List<int> list)
+    private void shuffle(List<int> list)
     {
         for (int i = list.Count - 1; i > 0; i--)
         {
@@ -768,7 +768,7 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Works both in Play mode and in the editor
-    void SafeDestroy(Object obj)
+    private void safeDestroy(Object obj)
     {
         if (obj == null) return;
         if (Application.isPlaying) Destroy(obj);
@@ -776,16 +776,16 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Hands the new floors to CubeFace so the face colour still applies
-    void ApplyFaceColor()
+    private void applyFaceColor()
     {
         CubeFace face = GetComponent<CubeFace>();
         if (face == null) return;
 
         face.colorRenderers = floorRenderers.ToArray();
-        face.ApplyColor();
+        face.applyColor();
     }
 
-    Transform GetContent()
+    private Transform getContent()
     {
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.levelContent != null) return face.levelContent.transform;

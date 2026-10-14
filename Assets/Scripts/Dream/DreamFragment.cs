@@ -26,37 +26,37 @@ public class DreamFragment : MonoBehaviour
     public float lightRange = 7f;
     public float lightIntensity = 3f;
 
-    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
-    static readonly int ColorID = Shader.PropertyToID("_Color");
-    static readonly int EmissionID = Shader.PropertyToID("_EmissionColor");
+    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int colorId = Shader.PropertyToID("_Color");
+    static readonly int emissionId = Shader.PropertyToID("_EmissionColor");
 
     Vector3 startPos;
     Material instanceMaterial;
     Light pointLight;
     bool collected;
 
-    void Start()
+    private void Start()
     {
         startPos = transform.localPosition;
-        SetUpGlow();
+        setUpGlow();
     }
 
     // Gives this fragment its own glowing material and a little light of its own
-    void SetUpGlow()
+    private void setUpGlow()
     {
         Renderer rend = GetComponent<Renderer>();
         if (rend != null)
         {
             // .material makes a copy, so changing it affects only this fragment
             instanceMaterial = rend.material;
-            instanceMaterial.SetColor(BaseColorID, glowColor);
-            instanceMaterial.SetColor(ColorID, glowColor);
+            instanceMaterial.SetColor(baseColorId, glowColor);
+            instanceMaterial.SetColor(colorId, glowColor);
 
             // Emission has to be switched on per material, not just set
             instanceMaterial.EnableKeyword("_EMISSION");
             instanceMaterial.globalIlluminationFlags =
                 MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            instanceMaterial.SetColor(EmissionID, glowColor * emissionStrength);
+            instanceMaterial.SetColor(emissionId, glowColor * emissionStrength);
         }
 
         if (!addLight) return;
@@ -72,7 +72,7 @@ public class DreamFragment : MonoBehaviour
         pointLight.shadows = LightShadows.None; // cheaper, and softer in fog
     }
 
-    void Update()
+    private void Update()
     {
         transform.Rotate(Vector3.up, spinSpeed * Time.deltaTime, Space.Self);
 
@@ -85,19 +85,19 @@ public class DreamFragment : MonoBehaviour
         float pulse = 1f - pulseDepth * (0.5f + 0.5f * Mathf.Sin(Time.time * pulseSpeed));
 
         if (instanceMaterial != null)
-            instanceMaterial.SetColor(EmissionID, glowColor * emissionStrength * pulse);
+            instanceMaterial.SetColor(emissionId, glowColor * emissionStrength * pulse);
 
         if (pointLight != null)
             pointLight.intensity = lightIntensity * pulse;
     }
 
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
         if (collected) return;
         if (other.GetComponent<PlayerController>() == null) return;
 
         collected = true;
-        LevelObjectives.Instance?.FragmentCollected();
+        LevelObjectives.Instance?.fragmentCollected();
         gameObject.SetActive(false);
     }
 }

@@ -40,40 +40,40 @@ public class DreamDoor : MonoBehaviour
     [Tooltip("Mist also pools and spreads along the floor.")]
     public bool mistPoolsAtBase = true;
 
-    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
-    static readonly int ColorID = Shader.PropertyToID("_Color");
-    static readonly int EmissionID = Shader.PropertyToID("_EmissionColor");
+    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int colorId = Shader.PropertyToID("_Color");
+    static readonly int emissionId = Shader.PropertyToID("_EmissionColor");
 
     Vector3 fullScale;
     float appearTimer;
     Light doorLight;
     Material instanceMaterial;
 
-    void Reset()
+    private void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
     }
 
-    void Awake()
+    private void Awake()
     {
         fullScale = transform.localScale;
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         // Restart the grow-in animation each time the door is revealed
         appearTimer = 0f;
         transform.localScale = Vector3.zero;
     }
 
-    void Start()
+    private void Start()
     {
-        SetUpMaterial();
-        if (addLight) SetUpLight();
-        if (addMist) SetUpMist();
+        setUpMaterial();
+        if (addLight) setUpLight();
+        if (addMist) setUpMist();
     }
 
-    void SetUpMaterial()
+    private void setUpMaterial()
     {
         Renderer rend = GetComponent<Renderer>();
         if (rend == null) return;
@@ -82,15 +82,15 @@ public class DreamDoor : MonoBehaviour
         instanceMaterial = rend.material;
 
         Color baseColor = doorColor * colorStrength;
-        instanceMaterial.SetColor(BaseColorID, baseColor);
-        instanceMaterial.SetColor(ColorID, baseColor);
+        instanceMaterial.SetColor(baseColorId, baseColor);
+        instanceMaterial.SetColor(colorId, baseColor);
 
         instanceMaterial.EnableKeyword("_EMISSION");
         instanceMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-        instanceMaterial.SetColor(EmissionID, doorColor * emissionStrength);
+        instanceMaterial.SetColor(emissionId, doorColor * emissionStrength);
     }
 
-    void SetUpLight()
+    private void setUpLight()
     {
         GameObject lightObj = new GameObject("DoorLight");
         lightObj.transform.SetParent(transform, false);
@@ -104,19 +104,19 @@ public class DreamDoor : MonoBehaviour
     }
 
     // Builds the mist drifting out of the doorway
-    void SetUpMist()
+    private void setUpMist()
     {
         // Spilling outward through the opening
-        MakeMist("DoorMist", Vector3.zero, Vector3.forward, 25f, mistReach, mistSize);
+        makeMist("DoorMist", Vector3.zero, Vector3.forward, 25f, mistReach, mistSize);
 
         // Pooling and spreading along the ground at the base
         if (mistPoolsAtBase)
-            MakeMist("DoorMistBase", Vector3.down * 1.3f, Vector3.forward, 80f,
+            makeMist("DoorMistBase", Vector3.down * 1.3f, Vector3.forward, 80f,
                      mistReach * 0.5f, mistSize * 1.4f);
     }
 
     // One mist emitter, built in code so there's nothing to set up
-    void MakeMist(string name, Vector3 offset, Vector3 direction, float spreadAngle,
+    private void makeMist(string name, Vector3 offset, Vector3 direction, float spreadAngle,
                   float reach, Vector2 size)
     {
         GameObject obj = new GameObject(name);
@@ -182,12 +182,12 @@ public class DreamDoor : MonoBehaviour
         rotationOverLife.enabled = true;
         rotationOverLife.z = new ParticleSystem.MinMaxCurve(-0.4f, 0.4f);
 
-        SetUpMistRenderer(ps);
+        setUpMistRenderer(ps);
         ps.Play();
     }
 
     // Soft additive billboards, with no shadows
-    void SetUpMistRenderer(ParticleSystem ps)
+    private void setUpMistRenderer(ParticleSystem ps)
     {
         ParticleSystemRenderer rend = ps.GetComponent<ParticleSystemRenderer>();
         rend.renderMode = ParticleSystemRenderMode.Billboard;
@@ -200,7 +200,7 @@ public class DreamDoor : MonoBehaviour
         if (shader == null) return;
 
         Material mat = new Material(shader);
-        mat.SetTexture("_BaseMap", BuildSoftTexture());
+        mat.SetTexture("_BaseMap", buildSoftTexture());
         mat.SetColor("_BaseColor", Color.white);
 
         // Additive blending, so mist brightens what's behind it rather than hiding it
@@ -216,7 +216,7 @@ public class DreamDoor : MonoBehaviour
     }
 
     // A soft round blob that fades out towards its edge
-    Texture2D BuildSoftTexture()
+    private Texture2D buildSoftTexture()
     {
         const int res = 64;
         Texture2D tex = new Texture2D(res, res, TextureFormat.RGBA32, false);
@@ -240,7 +240,7 @@ public class DreamDoor : MonoBehaviour
         return tex;
     }
 
-    void Update()
+    private void Update()
     {
         // Grow in with a little overshoot, so it lands with some weight
         if (appearTimer < 1f)
@@ -258,15 +258,15 @@ public class DreamDoor : MonoBehaviour
         float pulse = 1f - pulseDepth * (0.5f + 0.5f * Mathf.Sin(Time.time * pulseSpeed));
 
         if (instanceMaterial != null)
-            instanceMaterial.SetColor(EmissionID, doorColor * emissionStrength * pulse);
+            instanceMaterial.SetColor(emissionId, doorColor * emissionStrength * pulse);
 
         if (doorLight != null)
             doorLight.intensity = lightIntensity * pulse;
     }
 
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        CubeWorld.Instance.CompleteCurrentLevel();
+        CubeWorld.Instance.completeCurrentLevel();
     }
 }

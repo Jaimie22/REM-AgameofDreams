@@ -16,7 +16,7 @@ public class CubeFace : MonoBehaviour
     public GameObject lockedCover;
 
     [Header("Face Colour")]
-    [Tooltip("Untick to leave materials exactly as they are — needed for glass or any textured material.")]
+    [Tooltip("Untick to leave materials exactly as they are â€” needed for glass or any textured material.")]
     public bool tintFloors = false;
 
     [Tooltip("Identifying colour for this face. Only used when Tint Floors is ticked.")]
@@ -33,25 +33,25 @@ public class CubeFace : MonoBehaviour
     public Color gizmoColor = Color.cyan;
 
     // Colour property names: URP shaders use _BaseColor, older shaders use _Color
-    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
-    static readonly int ColorID = Shader.PropertyToID("_Color");
+    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int colorId = Shader.PropertyToID("_Color");
 
     public bool IsUnlocked { get; private set; }
 
-    void Awake()
+    private void Awake()
     {
-        ApplyColor();
+        applyColor();
     }
 
     // Runs in the editor whenever you change a value, so colours update instantly
-    void OnValidate()
+    private void OnValidate()
     {
-        ApplyColor();
+        applyColor();
     }
 
     // Tints each renderer without touching the shared material.
     // With Tint Floors off, it clears any tint so the real material shows through.
-    public void ApplyColor()
+    public void applyColor()
     {
         if (colorRenderers == null) return;
 
@@ -69,14 +69,14 @@ public class CubeFace : MonoBehaviour
             }
 
             r.GetPropertyBlock(block);
-            block.SetColor(BaseColorID, faceColor);
-            block.SetColor(ColorID, faceColor);
+            block.SetColor(baseColorId, faceColor);
+            block.SetColor(colorId, faceColor);
             r.SetPropertyBlock(block);
         }
     }
 
     // Shows the level or the fog, depending on lock state
-    public void SetUnlocked(bool unlocked)
+    public void setUnlocked(bool unlocked)
     {
         IsUnlocked = unlocked;
         if (levelContent != null) levelContent.SetActive(unlocked);
@@ -84,7 +84,7 @@ public class CubeFace : MonoBehaviour
     }
 
     // Scene view helpers: line = face "up", green sphere = spawn point
-    void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         Gizmos.color = tintFloors ? faceColor : gizmoColor;
         Gizmos.DrawLine(transform.position, transform.position + transform.up * 3f);

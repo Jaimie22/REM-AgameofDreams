@@ -35,13 +35,13 @@ public class CameraShake : MonoBehaviour
     float lastPhase;
     float currentAmount;   // smoothed, so the shake never snaps on or off
 
-    void Start()
+    private void Start()
     {
         seedX = Random.value * 100f;
         seedY = Random.value * 100f;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         // No heartbeat system, or no tension, means no shake at all
         float tension = HeartbeatSystem.Instance != null
@@ -73,11 +73,11 @@ public class CameraShake : MonoBehaviour
         transform.position += offset;
         transform.Rotate(Vector3.forward, x * maxRoll * currentAmount, Space.Self);
 
-        TrackBeats(tension);
+        trackBeats(tension);
     }
 
     // Kicks the camera roughly in time with the heartbeat
-    void TrackBeats(float tension)
+    private void trackBeats(float tension)
     {
         if (HeartbeatSystem.Instance == null || tension < 0.05f) return;
 

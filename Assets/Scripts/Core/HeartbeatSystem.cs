@@ -34,7 +34,7 @@ public class HeartbeatSystem : MonoBehaviour
     float targetTension;
     float beatTimer;
 
-    void Awake()
+    private void Awake()
     {
         Instance = this;
 
@@ -42,11 +42,11 @@ public class HeartbeatSystem : MonoBehaviour
         source.playOnAwake = false;
         source.spatialBlend = 0f;   // heard everywhere, it's inside his head
 
-        if (heartbeatClip == null) heartbeatClip = BuildHeartbeatClip();
+        if (heartbeatClip == null) heartbeatClip = buildHeartbeatClip();
     }
 
     // Builds a lub-dub from two decaying low thumps
-    AudioClip BuildHeartbeatClip()
+    private AudioClip buildHeartbeatClip()
     {
         const int rate = 44100;
         const float length = 0.55f;
@@ -59,7 +59,7 @@ public class HeartbeatSystem : MonoBehaviour
             float t = (float)i / rate;
 
             // Two thumps: the "lub" at the start, the quieter "dub" just after
-            data[i] = Thump(t, 0f, 1f) + Thump(t, 0.19f, 0.65f);
+            data[i] = thump(t, 0f, 1f) + thump(t, 0.19f, 0.65f);
         }
 
         AudioClip clip = AudioClip.Create("Heartbeat", samples, 1, rate, false);
@@ -68,7 +68,7 @@ public class HeartbeatSystem : MonoBehaviour
     }
 
     // One low sine pulse that fades away quickly
-    float Thump(float t, float startTime, float loudness)
+    private float thump(float t, float startTime, float loudness)
     {
         float local = t - startTime;
         if (local < 0f) return 0f;
@@ -83,19 +83,19 @@ public class HeartbeatSystem : MonoBehaviour
     }
 
     // Called by the demon director, or anything else that raises tension
-    public void SetTension(float value)
+    public void setTension(float value)
     {
         targetTension = Mathf.Clamp01(value);
     }
 
     // Stops the heartbeat, for levels that shouldn't have one
-    public void Silence()
+    public void silence()
     {
         targetTension = 0f;
         Tension = 0f;
     }
 
-    void Update()
+    private void Update()
     {
         Tension = Mathf.Lerp(Tension, targetTension, blendSpeed * Time.deltaTime);
         if (Tension < 0.01f) return;

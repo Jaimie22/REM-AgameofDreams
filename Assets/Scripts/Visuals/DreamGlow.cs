@@ -40,17 +40,17 @@ public class DreamGlow : MonoBehaviour
     Light faintLight;
     Camera cam;
 
-    void Start()
+    private void Start()
     {
         controller = GetComponent<CharacterController>();
         cam = Camera.main;
 
-        BuildHalo();
-        if (addFaintLight) BuildLight();
+        buildHalo();
+        if (addFaintLight) buildLight();
     }
 
     // A quad with a soft radial texture, blended additively
-    void BuildHalo()
+    private void buildHalo()
     {
         GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Quad);
         obj.name = "DreamGlow";
@@ -62,20 +62,20 @@ public class DreamGlow : MonoBehaviour
         rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         rend.receiveShadows = false;
 
-        haloMaterial = BuildMaterial();
+        haloMaterial = buildMaterial();
         rend.material = haloMaterial;
 
         halo = obj.transform;
         halo.SetParent(null); // world space, so it never inherits his rotation
     }
 
-    Material BuildMaterial()
+    private Material buildMaterial()
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null) shader = Shader.Find("Unlit/Transparent");
 
         Material mat = new Material(shader);
-        mat.SetTexture("_BaseMap", BuildGlowTexture());
+        mat.SetTexture("_BaseMap", buildGlowTexture());
 
         // Additive blending, so it brightens whatever is behind it
         mat.SetFloat("_Surface", 1f);
@@ -90,7 +90,7 @@ public class DreamGlow : MonoBehaviour
     }
 
     // Paints a circle that fades smoothly out to nothing
-    Texture2D BuildGlowTexture()
+    private Texture2D buildGlowTexture()
     {
         const int res = 128;
         Texture2D tex = new Texture2D(res, res, TextureFormat.RGBA32, false);
@@ -114,7 +114,7 @@ public class DreamGlow : MonoBehaviour
         return tex;
     }
 
-    void BuildLight()
+    private void buildLight()
     {
         GameObject obj = new GameObject("GlowLight");
         obj.transform.SetParent(transform, false);
@@ -128,7 +128,7 @@ public class DreamGlow : MonoBehaviour
         faintLight.shadows = LightShadows.None;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (halo == null) return;
         if (cam == null) cam = Camera.main;
@@ -168,17 +168,17 @@ public class DreamGlow : MonoBehaviour
     }
 
     // The halo lives outside him, so tidy it up when he's hidden or destroyed
-    void OnDisable()
+    private void OnDisable()
     {
         if (halo != null) halo.gameObject.SetActive(false);
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         if (halo != null) halo.gameObject.SetActive(true);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (halo != null) Destroy(halo.gameObject);
     }

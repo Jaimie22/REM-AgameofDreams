@@ -21,7 +21,7 @@ public class DemonDirector : MonoBehaviour
     public float intervalVariation = 8f;
 
     [Header("Placement")]
-    [Tooltip("How far away it appears. In a maze, keep this short — corridors are tight.")]
+    [Tooltip("How far away it appears. In a maze, keep this short â€” corridors are tight.")]
     public Vector2 sightingDistance = new Vector2(8f, 14f);
     [Tooltip("How many spots to try before giving up this time round.")]
     public int placementAttempts = 25;
@@ -29,7 +29,7 @@ public class DemonDirector : MonoBehaviour
     public float standHeight = 0.1f;
 
     [Header("Tension")]
-    [Tooltip("Tension while simply exploring. Keep this low — it's the floor, not the ceiling.")]
+    [Tooltip("Tension while simply exploring. Keep this low â€” it's the floor, not the ceiling.")]
     [Range(0f, 1f)] public float baseTension = 0.15f;
     [Tooltip("Extra tension added as the player delivers fragments.")]
     [Range(0f, 1f)] public float progressTension = 0.25f;
@@ -58,12 +58,12 @@ public class DemonDirector : MonoBehaviour
     int lastDeliveredCount;
     bool wasActive;
 
-    void OnEnable()
+    private void OnEnable()
     {
-        ResetLevel();
+        resetLevel();
     }
 
-    void ResetLevel()
+    private void resetLevel()
     {
         timeOnFace = 0f;
         spike = 0f;
@@ -71,9 +71,9 @@ public class DemonDirector : MonoBehaviour
         lastDeliveredCount = 0;
     }
 
-    void Update()
+    private void Update()
     {
-        bool active = IsActiveFace();
+        bool active = isActiveFace();
 
         // Left the level, so hand the tension back to nothing.
         // This has to happen here, or the last value sticks and the camera never settles.
@@ -83,8 +83,8 @@ public class DemonDirector : MonoBehaviour
             {
                 wasActive = false;
                 spike = 0f;
-                HeartbeatSystem.Instance?.Silence();
-                ResetLevel();
+                HeartbeatSystem.Instance?.silence();
+                resetLevel();
             }
             return;
         }
@@ -98,7 +98,7 @@ public class DemonDirector : MonoBehaviour
         if (LevelObjectives.Instance != null && LevelObjectives.Instance.DoorOpen)
         {
             spike = 0f;
-            HeartbeatSystem.Instance?.SetTension(doorOpenTension);
+            HeartbeatSystem.Instance?.setTension(doorOpenTension);
             return;
         }
 
@@ -117,11 +117,11 @@ public class DemonDirector : MonoBehaviour
         float tension = Mathf.Min(tensionCeiling,
                                   baseTension + progressTension * progress + spike);
 
-        HeartbeatSystem.Instance?.SetTension(tension);
+        HeartbeatSystem.Instance?.setTension(tension);
 
         if (timeOnFace < nextSightingTime) return;
 
-        TrySighting(tension);
+        trySighting(tension);
 
         // Sightings come closer together as the tension climbs
         float interval = Mathf.Lerp(startingInterval, minimumInterval, tension);
@@ -129,7 +129,7 @@ public class DemonDirector : MonoBehaviour
                          + Random.Range(-intervalVariation, intervalVariation);
     }
 
-    bool IsActiveFace()
+    private bool isActiveFace()
     {
         CubeWorld world = CubeWorld.Instance;
         return world != null
@@ -138,7 +138,7 @@ public class DemonDirector : MonoBehaviour
     }
 
     // Finds a spot the player can actually see, and puts the demon there
-    void TrySighting(float tension)
+    private void trySighting(float tension)
     {
         CubeWorld world = CubeWorld.Instance;
         if (world == null || world.player == null || world.dreamCamera == null) return;
@@ -146,9 +146,9 @@ public class DemonDirector : MonoBehaviour
         Transform player = world.player.transform;
         Camera cam = world.dreamCamera.Cam;
 
-        if (!FindSightingSpot(player, cam, out Vector3 spot)) return;
+        if (!findSightingSpot(player, cam, out Vector3 spot)) return;
 
-        GameObject demon = BuildDemon(spot, player);
+        GameObject demon = buildDemon(spot, player);
         DemonSighting sighting = demon.GetComponent<DemonSighting>();
         if (sighting == null) sighting = demon.AddComponent<DemonSighting>();
 
@@ -156,13 +156,13 @@ public class DemonDirector : MonoBehaviour
         sighting.lingerTime = Mathf.Lerp(1.5f, 3.5f, tension);
         sighting.maxOpacity = Mathf.Lerp(0.5f, 0.9f, tension);
 
-        sighting.Begin(player, cam);
+        sighting.begin(player, cam);
 
         spike = Mathf.Min(1f, spike + sightingSpike);
     }
 
     // Looks for floor at the right distance that's on screen and in line of sight
-    bool FindSightingSpot(Transform player, Camera cam, out Vector3 spot)
+    private bool findSightingSpot(Transform player, Camera cam, out Vector3 spot)
     {
         spot = Vector3.zero;
 
@@ -212,7 +212,7 @@ public class DemonDirector : MonoBehaviour
     }
 
     // Builds the demon, either from a prefab or as a placeholder silhouette
-    GameObject BuildDemon(Vector3 position, Transform player)
+    private GameObject buildDemon(Vector3 position, Transform player)
     {
         if (demonPrefab != null)
         {
@@ -233,16 +233,16 @@ public class DemonDirector : MonoBehaviour
         body.transform.localScale = new Vector3(0.5f, placeholderHeight * 0.5f, 0.5f);
         Destroy(body.GetComponent<Collider>());
 
-        SetSilhouetteMaterial(body.GetComponent<Renderer>(), new Color(0.02f, 0.02f, 0.03f));
+        setSilhouetteMaterial(body.GetComponent<Renderer>(), new Color(0.02f, 0.02f, 0.03f));
 
         // Two faint eyes, which is what sells it at distance
-        MakeEye(demon.transform, new Vector3(-0.12f, placeholderHeight * 0.88f, 0.22f));
-        MakeEye(demon.transform, new Vector3(0.12f, placeholderHeight * 0.88f, 0.22f));
+        makeEye(demon.transform, new Vector3(-0.12f, placeholderHeight * 0.88f, 0.22f));
+        makeEye(demon.transform, new Vector3(0.12f, placeholderHeight * 0.88f, 0.22f));
 
         return demon;
     }
 
-    void MakeEye(Transform parent, Vector3 localPos)
+    private void makeEye(Transform parent, Vector3 localPos)
     {
         GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         eye.name = "Eye";
@@ -252,7 +252,7 @@ public class DemonDirector : MonoBehaviour
         Destroy(eye.GetComponent<Collider>());
 
         Renderer rend = eye.GetComponent<Renderer>();
-        SetSilhouetteMaterial(rend, eyeColor);
+        setSilhouetteMaterial(rend, eyeColor);
 
         Material mat = rend.material;
         mat.EnableKeyword("_EMISSION");
@@ -260,7 +260,7 @@ public class DemonDirector : MonoBehaviour
     }
 
     // A see-through material, so the figure can fade in and out
-    void SetSilhouetteMaterial(Renderer rend, Color color)
+    private void setSilhouetteMaterial(Renderer rend, Color color)
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null) shader = Shader.Find("Standard");

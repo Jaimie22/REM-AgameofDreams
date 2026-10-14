@@ -17,7 +17,7 @@ public class DreamCubeBuilder : MonoBehaviour
     public Material fogMaterial;
 
     [ContextMenu("Build Dream Cube")]
-    void Build()
+    private void build()
     {
         // Remove anything built previously so you can rebuild safely
         for (int i = transform.childCount - 1; i >= 0; i--)
@@ -32,7 +32,7 @@ public class DreamCubeBuilder : MonoBehaviour
         body.name = "CubeBody";
         body.transform.SetParent(transform, false);
         body.transform.localScale = Vector3.one * cubeSize;
-        SetMaterial(body, bodyMaterial);
+        setMaterial(body, bodyMaterial);
 
         // --- The six faces, in level order ---
         string[] names =
@@ -76,7 +76,7 @@ public class DreamCubeBuilder : MonoBehaviour
             floor.transform.SetParent(content.transform, false);
             floor.transform.localPosition = new Vector3(0f, 0.01f, 0f);
             floor.transform.localScale = Vector3.one * (cubeSize / 10f) * 0.95f;
-            SetMaterial(floor, floorMaterial);
+            setMaterial(floor, floorMaterial);
 
             // Door of light at the far end of the face
             GameObject door = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -86,7 +86,7 @@ public class DreamCubeBuilder : MonoBehaviour
             door.transform.localScale = new Vector3(2f, 3f, 0.5f);
             door.GetComponent<Collider>().isTrigger = true;
             door.AddComponent<DreamDoor>();
-            SetMaterial(door, doorMaterial);
+            setMaterial(door, doorMaterial);
 
             // Spawn point at the near end, facing the door
             GameObject spawn = new GameObject("SpawnPoint");
@@ -100,7 +100,7 @@ public class DreamCubeBuilder : MonoBehaviour
             fog.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             fog.transform.localScale = Vector3.one * (cubeSize / 10f);
             DestroyImmediate(fog.GetComponent<Collider>());
-            SetMaterial(fog, fogMaterial);
+            setMaterial(fog, fogMaterial);
 
             // Hook everything up in the Inspector slots
             face.spawnPoint = spawn.transform;
@@ -123,7 +123,7 @@ public class DreamCubeBuilder : MonoBehaviour
     }
 
     // Applies a material only if one was assigned
-    void SetMaterial(GameObject obj, Material mat)
+    private void setMaterial(GameObject obj, Material mat)
     {
         if (mat != null) obj.GetComponent<Renderer>().sharedMaterial = mat;
     }
