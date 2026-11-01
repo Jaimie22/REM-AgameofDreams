@@ -1,123 +1,501 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-// Smoothly blends between three views:
-// Playing  = close in, following the player at a fixed isometric angle
-// Cube     = pulled back, looking at the whole cube so it can be spun
-// Map      = straight down onto one face, so the player can read the level
+// Handles the player camera, cube overview and map view
+// The player camera can use isometric or third person
 [RequireComponent(typeof(Camera))]
 public class DreamCamera : MonoBehaviour
 {
-    [Header("Cube View (zoomed out)")]
-    [Tooltip("Drag the cube's root object here.")]
-    public Transform cubeCenter;
-    public float overviewDistance = 45f;
-    [Tooltip("X = pitch (look down angle), Y = yaw.")]
-    public Vector2 overviewAngles = new Vector2(20f, 0f);
-    public float overviewFOV = 50f;
+    // Available camera styles when playing a level
+    public enum PlayerCameraStyle
+    {
+        Isometric,
+        ThirdPerson
+    }
 
-    [Header("Map View (M key)")]
-    [Tooltip("How far above the face the map camera sits. Lower = the face fills more of the screen.")]
-    public float mapDistance = 38f;
-    [Tooltip("Degrees off dead-on. 0 is straight down, which reads best as a map.")]
-    public float mapTilt = 0f;
-    public float mapFOV = 50f;
+    [Header("Player Camera Mode")]
+    [Tooltip("Choose the camera style used while playing a level")]
+    public PlayerCameraStyle playerCameraStyle = PlayerCameraStyle.Isometric;
 
-    [Header("Isometric (zoomed in)")]
+    [Header("Isometric Camera")]
+    [Tooltip("Distance between the camera and the player")]
     public float isoDistance = 30f;
-    [Tooltip("35 / 45 gives a classic isometric look.")]
+
+    [Tooltip("X is the downward angle and Y is the horizontal angle")]
     public Vector2 isoAngles = new Vector2(35f, 45f);
-    [Tooltip("A low FOV from far away flattens perspective to feel isometric.")]
+
+    [Tooltip("Lower values give a flatter isometric appearance")]
+    [Range(10f, 90f)]
     public float isoFOV = 20f;
 
-    [Header("Smoothing")]
+    [Tooltip("How high above the player the camera focuses")]
+    public float isoFocusHeight = 0.8f;
+
+    [Tooltip("How far ahead of the player the camera looks")]
+    public float isoLookAheadDistance = 0.75f;
+
+    [Header("Third Person Camera")]
+    [Tooltip("Distance behind the player")]
+    public float thirdPersonDistance = 5f;
+
+    [Tooltip("Height of the camera's focus point above the player")]
+    public float thirdPersonHeight = 2.5f;
+
+    [Tooltip("Starting downward camera angle")]
+    public float thirdPersonPitch = 15f;
+
+    [Range(30f, 100f)]
+    public float thirdPersonFOV = 60f;
+
+    [Header("Third Person Mouse Controls")]
+    [Tooltip("Hold right mouse button and move the mouse to look around")]
+    public bool enableMouseRotation = true;
+
+    [Tooltip("How quickly the camera rotates with the mouse")]
+    public float mouseSensitivity = 0.15f;
+
+    [Tooltip("Reverse vertical mouse movement")]
+    public bool invertMouseY = false;
+
+    [Tooltip("Lowest vertical viewing angle")]
+    public float minimumPitch = -20f;
+
+    [Tooltip("Highest vertical viewing angle")]
+    public float maximumPitch = 70f;
+
+    [Header("Third Person Camera Collision")]
+    [Tooltip("Move the camera closer when a wall blocks its view")]
+    public bool enableCameraCollision = true;
+
+    [Tooltip("Layers that can block the camera")]
+    public LayerMask collisionLayers = ~0;
+
+    [Tooltip("Radius used to check for obstacles")]
+    public float collisionRadius = 0.2f;
+
+    [Tooltip("Extra space kept between the camera and obstacles")]
+    public float collisionPadding = 0.1f;
+
+    [Header("Cube Overview")]
+    [Tooltip("Drag the cube root object here")]
+    public Transform cubeCenter;
+
+    public float overviewDistance = 45f;
+
+    [Tooltip("X is pitch and Y is yaw")]
+    public Vector2 overviewAngles = new Vector2(20f, 0f);
+
+    public float overviewFOV = 50f;
+
+    [Header("Map View")]
+    [Tooltip("Distance above the selected cube face")]
+    public float mapDistance = 38f;
+
+    [Tooltip("Map viewing angle away from straight down")]
+    public float mapTilt = 0f;
+
+    public float mapFOV = 50f;
+
+    [Header("Camera Smoothing")]
+    [Tooltip("Time taken to smoothly follow the target")]
     public float moveSmoothTime = 0.35f;
+
+    [Tooltip("Speed of camera rotation and FOV changes")]
     public float rotateSpeed = 6f;
 
+    // Keep this property for CubeWorld and other scripts
     public Camera Cam { get; private set; }
 
-    Transform followTarget;
-    Transform mapFace;        // the face being shown as a map, if any
-    bool playing;
-    Vector3 moveVelocity;
+    // Current camera targets
+    private Transform followTarget;
+    private Transform mapFace;
+
+    // Current camera state
+    private bool playing;
+    private Vector3 moveVelocity;
+
+    // Third person rotation values
+    private float orbitYaw;
+    private float orbitPitch;
+
+    // Tracks when the third person camera becomes active
+    private bool wasThirdPersonActive;
 
     private void Awake()
     {
         Cam = GetComponent<Camera>();
     }
 
-    // Pull back to the whole cube, free to be spun
+    // Switch to the cube overview
     public void setOverview()
     {
         playing = false;
         followTarget = null;
         mapFace = null;
+        moveVelocity = Vector3.zero;
     }
 
-    // Look straight down onto one face, as a map
+    // Switch to the overhead map
     public void setMapView(Transform face)
     {
         playing = false;
         followTarget = null;
         mapFace = face;
+        moveVelocity = Vector3.zero;
     }
 
+    // Switch to the player camera
     public void setPlaying(Transform target)
     {
         playing = true;
         followTarget = target;
         mapFace = null;
+        moveVelocity = Vector3.zero;
+
+        // Start the third person camera behind the player
+        if (target != null)
+        {
+            orbitYaw = target.eulerAngles.y;
+            orbitPitch = Mathf.Clamp(
+                thirdPersonPitch,
+                minimumPitch,
+                maximumPitch
+            );
+        }
     }
 
-    // Jumps straight to the current view with no smoothing
+    // Immediately move to the correct camera position
     public void snapToTarget()
     {
-        getTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
-        transform.SetPositionAndRotation(pos, rot);
+        getTargetPose(
+            out Vector3 position,
+            out Quaternion rotation,
+            out float fov
+        );
+
+        transform.SetPositionAndRotation(position, rotation);
         Cam.fieldOfView = fov;
         moveVelocity = Vector3.zero;
     }
 
+
     private void LateUpdate()
     {
-        getTargetPose(out Vector3 pos, out Quaternion rot, out float fov);
+        // Handle locking and unlocking the cursor
+        updateCursorState();
 
-        transform.position = Vector3.SmoothDamp(transform.position, pos, ref moveVelocity, moveSmoothTime);
-        transform.rotation = Quaternion.Slerp(transform.rotation, rot, rotateSpeed * Time.deltaTime);
-        Cam.fieldOfView = Mathf.Lerp(Cam.fieldOfView, fov, rotateSpeed * Time.deltaTime);
+        // Rotate the third person camera with the mouse
+        if (playing &&
+            followTarget != null &&
+            playerCameraStyle == PlayerCameraStyle.ThirdPerson)
+        {
+            updateThirdPersonInput();
+        }
+
+        getTargetPose(
+            out Vector3 position,
+            out Quaternion rotation,
+            out float fov
+        );
+
+        // Smoothly move towards the target camera position
+        transform.position = Vector3.SmoothDamp(
+            transform.position,
+            position,
+            ref moveVelocity,
+            Mathf.Max(0.01f, moveSmoothTime)
+        );
+
+        // Smoothly rotate towards the target camera angle
+        float rotationAmount = Mathf.Clamp01(
+            rotateSpeed * Time.deltaTime
+        );
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            rotation,
+            rotationAmount
+        );
+
+        Cam.fieldOfView = Mathf.Lerp(
+            Cam.fieldOfView,
+            fov,
+            rotationAmount
+        );
     }
 
-    // Works out where the camera *should* be for the current view
-    private void getTargetPose(out Vector3 pos, out Quaternion rot, out float fov)
+
+    // Rotate the third person camera whenever the mouse moves
+    private void updateThirdPersonInput()
     {
-        // Following the player
-        if (playing && followTarget != null)
+        if (!enableMouseRotation)
         {
-            rot = Quaternion.Euler(isoAngles.x, isoAngles.y, 0f);
-            pos = followTarget.position - rot * Vector3.forward * isoDistance;
-            fov = isoFOV;
             return;
         }
 
-        // Straight down onto one face
+        Mouse mouse = Mouse.current;
+
+        // Only rotate while the cursor is locked
+        if (mouse == null || Cursor.lockState != CursorLockMode.Locked)
+        {
+            return;
+        }
+
+        Vector2 mouseDelta = mouse.delta.ReadValue();
+
+        // Turn the camera left and right
+        orbitYaw += mouseDelta.x * mouseSensitivity;
+
+        // Turn the camera up and down
+        float verticalDirection = invertMouseY ? 1f : -1f;
+
+        orbitPitch += mouseDelta.y *
+                    mouseSensitivity *
+                    verticalDirection;
+
+        // Stop the camera rotating too far vertically
+        orbitPitch = Mathf.Clamp(
+            orbitPitch,
+            minimumPitch,
+            maximumPitch
+        );
+    }
+
+    // Calculate the camera position for the active view
+    private void getTargetPose(
+        out Vector3 position,
+        out Quaternion rotation,
+        out float fov)
+    {
+        // Follow the player using the selected camera style
+        if (playing && followTarget != null)
+        {
+            if (playerCameraStyle == PlayerCameraStyle.ThirdPerson)
+            {
+                getThirdPersonPose(
+                    out position,
+                    out rotation,
+                    out fov
+                );
+            }
+            else
+            {
+                getIsometricPose(
+                    out position,
+                    out rotation,
+                    out fov
+                );
+            }
+
+            return;
+        }
+
+        // Keep the existing overhead map behaviour
         if (mapFace != null)
         {
-            // The face's green Y arrow points outward, so that's where the camera goes
             Vector3 outward = mapFace.up;
 
             if (Mathf.Abs(mapTilt) > 0.01f)
-                outward = Quaternion.AngleAxis(mapTilt, mapFace.right) * outward;
+            {
+                outward = Quaternion.AngleAxis(
+                    mapTilt,
+                    mapFace.right
+                ) * outward;
+            }
 
-            // The face's own forward keeps the map the right way up, however the cube sits
-            pos = mapFace.position + outward * mapDistance;
-            rot = Quaternion.LookRotation(-outward, mapFace.forward);
+            position = mapFace.position + outward * mapDistance;
+
+            rotation = Quaternion.LookRotation(
+                -outward,
+                mapFace.forward
+            );
+
             fov = mapFOV;
             return;
         }
 
-        // The whole cube, from the fixed angle
-        Vector3 center = cubeCenter != null ? cubeCenter.position : Vector3.zero;
-        rot = Quaternion.Euler(overviewAngles.x, overviewAngles.y, 0f);
-        pos = center - rot * Vector3.forward * overviewDistance;
+        // Keep the existing cube overview behaviour
+        Vector3 center = cubeCenter != null
+            ? cubeCenter.position
+            : Vector3.zero;
+
+        rotation = Quaternion.Euler(
+            overviewAngles.x,
+            overviewAngles.y,
+            0f
+        );
+
+        position = center -
+                   rotation * Vector3.forward * overviewDistance;
+
         fov = overviewFOV;
+    }
+
+    // Calculate the improved isometric camera position
+    private void getIsometricPose(
+        out Vector3 position,
+        out Quaternion rotation,
+        out float fov)
+    {
+        rotation = Quaternion.Euler(
+            isoAngles.x,
+            isoAngles.y,
+            0f
+        );
+
+        // Look slightly above and ahead of the player
+        Vector3 focusPoint = followTarget.position +
+                             Vector3.up * isoFocusHeight +
+                             followTarget.forward * isoLookAheadDistance;
+
+        position = focusPoint -
+                   rotation * Vector3.forward * isoDistance;
+
+        fov = isoFOV;
+    }
+
+    // Calculate the third person camera position
+    private void getThirdPersonPose(
+        out Vector3 position,
+        out Quaternion rotation,
+        out float fov)
+    {
+        // Build the camera rotation from mouse input
+        rotation = Quaternion.Euler(
+            orbitPitch,
+            orbitYaw,
+            0f
+        );
+
+        // Focus above the player's feet
+        Vector3 focusPoint = followTarget.position +
+                             Vector3.up * thirdPersonHeight;
+
+        // Place the camera behind its focus point
+        Vector3 cameraDirection = -(rotation * Vector3.forward);
+
+        float distance = Mathf.Max(0.1f, thirdPersonDistance);
+
+        // Check for walls between the player and camera
+        if (enableCameraCollision)
+        {
+            distance = getCollisionDistance(
+                focusPoint,
+                cameraDirection,
+                distance
+            );
+        }
+
+        position = focusPoint + cameraDirection * distance;
+        fov = thirdPersonFOV;
+    }
+
+    // Move the camera closer when an obstacle blocks the view
+    private float getCollisionDistance(
+        Vector3 origin,
+        Vector3 direction,
+        float desiredDistance)
+    {
+        float closestDistance = desiredDistance;
+
+        RaycastHit[] hits = Physics.SphereCastAll(
+            origin,
+            Mathf.Max(0.01f, collisionRadius),
+            direction,
+            desiredDistance,
+            collisionLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        foreach (RaycastHit hit in hits)
+        {
+            // Ignore the player and any child colliders
+            if (hit.collider.transform.IsChildOf(followTarget))
+            {
+                continue;
+            }
+
+            // Keep the camera just in front of the obstacle
+            float safeDistance = Mathf.Max(
+                0.05f,
+                hit.distance - collisionPadding
+            );
+
+            if (safeDistance < closestDistance)
+            {
+                closestDistance = safeDistance;
+            }
+        }
+
+        return closestDistance;
+    }
+
+    // Manage the mouse cursor based on the active camera style
+    private void updateCursorState()
+    {
+        bool thirdPersonActive =
+            playing &&
+            followTarget != null &&
+            playerCameraStyle == PlayerCameraStyle.ThirdPerson &&
+            enableMouseRotation;
+
+        // Lock or unlock when changing camera styles
+        if (thirdPersonActive != wasThirdPersonActive)
+        {
+            if (thirdPersonActive)
+            {
+                lockCursor();
+            }
+            else
+            {
+                unlockCursor();
+            }
+
+            wasThirdPersonActive = thirdPersonActive;
+        }
+
+        if (!thirdPersonActive)
+        {
+            return;
+        }
+
+        Keyboard keyboard = Keyboard.current;
+        Mouse mouse = Mouse.current;
+
+        // Escape releases the cursor
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            unlockCursor();
+            return;
+        }
+
+        // Left-click locks the cursor again
+        if (mouse != null &&
+            mouse.leftButton.wasPressedThisFrame &&
+            Cursor.lockState != CursorLockMode.Locked)
+        {
+            lockCursor();
+        }
+    }
+
+    // Lock and hide the mouse cursor
+    private void lockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    // Unlock and show the mouse cursor
+    private void unlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    // Restore the cursor when the camera is disabled
+    private void OnDisable()
+    {
+        unlockCursor();
+        wasThirdPersonActive = false;
     }
 }
