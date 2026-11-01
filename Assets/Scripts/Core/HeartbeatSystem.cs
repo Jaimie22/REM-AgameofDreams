@@ -83,13 +83,13 @@ public class HeartbeatSystem : MonoBehaviour
     }
 
     // Called by the demon director, or anything else that raises tension
-    public void setTension(float value)
+    public void SetTension(float value)
     {
         targetTension = Mathf.Clamp01(value);
     }
 
     // Stops the heartbeat, for levels that shouldn't have one
-    public void silence()
+    public void Silence()
     {
         targetTension = 0f;
         Tension = 0f;

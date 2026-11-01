@@ -27,8 +27,8 @@ public class DemonSighting : MonoBehaviour
     public float swayAmount = 0.04f;
     public float swaySpeed = 1.3f;
 
-    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
-    static readonly int colorId = Shader.PropertyToID("_Color");
+    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
+    static readonly int ColorID = Shader.PropertyToID("_Color");
 
     Transform player;
     Camera cam;
@@ -39,17 +39,17 @@ public class DemonSighting : MonoBehaviour
     Vector3 basePosition;
 
     // Called by the director right after it spawns one
-    public void begin(Transform playerTransform, Camera viewCamera)
+    public void Begin(Transform playerTransform, Camera viewCamera)
     {
         player = playerTransform;
         cam = viewCamera;
         basePosition = transform.position;
 
         renderers = GetComponentsInChildren<Renderer>();
-        setOpacity(0f);
+        SetOpacity(0f);
     }
 
-    private void Update()
+    void Update()
     {
         age += Time.deltaTime;
 
@@ -71,7 +71,7 @@ public class DemonSighting : MonoBehaviour
         }
 
         // Gone the moment it's off screen, so it's never seen leaving
-        if (vanishWhenUnseen && opacity > 0.1f && !isOnScreen())
+        if (vanishWhenUnseen && opacity > 0.1f && !IsOnScreen())
         {
             Destroy(gameObject);
             return;
@@ -85,7 +85,7 @@ public class DemonSighting : MonoBehaviour
                               : 1f / Mathf.Max(0.01f, fadeInTime);
 
         opacity = Mathf.MoveTowards(opacity, target, speed * maxOpacity * Time.deltaTime);
-        setOpacity(opacity);
+        SetOpacity(opacity);
 
         // A slow sway on the spot
         float sway = Mathf.Sin(Time.time * swaySpeed) * swayAmount;
@@ -94,7 +94,7 @@ public class DemonSighting : MonoBehaviour
         if (leaving && opacity <= 0.01f) Destroy(gameObject);
     }
 
-    private bool isOnScreen()
+    bool IsOnScreen()
     {
         if (cam == null) return true;
 
@@ -105,7 +105,7 @@ public class DemonSighting : MonoBehaviour
     }
 
     // Fades every part of it together
-    private void setOpacity(float value)
+    void SetOpacity(float value)
     {
         if (renderers == null) return;
 
@@ -117,13 +117,13 @@ public class DemonSighting : MonoBehaviour
 
             r.GetPropertyBlock(block);
 
-            Color c = r.sharedMaterial != null && r.sharedMaterial.HasProperty(baseColorId)
-                ? r.sharedMaterial.GetColor(baseColorId)
+            Color c = r.sharedMaterial != null && r.sharedMaterial.HasProperty(BaseColorID)
+                ? r.sharedMaterial.GetColor(BaseColorID)
                 : Color.black;
 
             c.a = value;
-            block.SetColor(baseColorId, c);
-            block.SetColor(colorId, c);
+            block.SetColor(BaseColorID, c);
+            block.SetColor(ColorID, c);
             r.SetPropertyBlock(block);
         }
     }

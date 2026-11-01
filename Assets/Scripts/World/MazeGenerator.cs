@@ -96,6 +96,63 @@ public class MazeGenerator : MonoBehaviour
         SafeDestroy(old.gameObject);
     }
 
+    // --- Grid access, so the hunter can navigate the maze ---------
+
+    public int CellsWide => cellsWide;
+    public int CellsDeep => cellsDeep;
+
+    // True if these two cells are connected, with no wall between them
+    public bool IsOpenBetween(int fromX, int fromY, int toX, int toY)
+    {
+        if (solid == null) return false;
+        if (!InCells(fromX, fromY) || !InCells(toX, toY)) return false;
+
+        // The wall slot sits midway between the two cell slots
+        int wallX = fromX + toX + 1;
+        int wallY = fromY + toY + 1;
+
+        if (wallX < 0 || wallX >= gridW || wallY < 0 || wallY >= gridH) return false;
+
+        return !solid[wallX, wallY];
+    }
+
+    // The local position of a cell's floor, for something standing on it
+    public Vector3 CellPosition(int cx, int cy, float height)
+    {
+        return CellCenter(cx, cy, baseHeight + height);
+    }
+
+    // Which cell a local position falls in
+    public bool PositionToCell(Vector3 local, out int cx, out int cy)
+    {
+        cx = 0;
+        cy = 0;
+        if (solid == null) return false;
+
+        // Walk the slots to find which cell this falls inside
+        for (int i = 0; i < cellsWide; i++)
+        {
+            float centre = SlotCenter(i * 2 + 1);
+            if (Mathf.Abs(local.x - centre) <= corridor * 0.5f + wallThickness * 0.5f)
+            {
+                cx = i;
+                break;
+            }
+        }
+        // Walk the slots to find which cell this falls inside
+        for (int i = 0; i < cellsDeep; i++)
+        {   
+            float centre = SlotCenter(i * 2 + 1);
+            if (Mathf.Abs(local.z - centre) <= corridor * 0.5f + wallThickness * 0.5f)
+            {
+                cy = i;
+                break;
+            }
+        }
+
+        return InCells(cx, cy);
+    }
+
     // Builds the maze. The same seed always gives the same layout.
     public void Generate(int seed)
     {
@@ -124,9 +181,13 @@ public class MazeGenerator : MonoBehaviour
         BuildFloor();
         BuildWalls();
         PlaceContents();
+
+        // The hunter goes in once the maze exists, so it can find its way around
+        HunterSpawner spawner = GetComponent<HunterSpawner>();
+        if (spawner != null) spawner.SpawnHunter();
     }
 
-    // --- Sizing -----------------------------------------------------
+   
 
     // Works out how many cells fit, then stretches them to fill the face exactly
     void WorkOutGridSize()
@@ -169,7 +230,7 @@ public class MazeGenerator : MonoBehaviour
         return new Vector3(SlotCenter(cx * 2 + 1), height, SlotCenter(cy * 2 + 1));
     }
 
-    // --- Maze carving -----------------------------------------------
+  
 
     int CellIndex(int cx, int cy) { return cx + cy * cellsWide; }
     bool InCells(int cx, int cy) { return cx >= 0 && cx < cellsWide && cy >= 0 && cy < cellsDeep; }
@@ -331,11 +392,11 @@ public class MazeGenerator : MonoBehaviour
     // Cuts a gap in the outer wall at the start and at the exit
     void OpenEntranceAndExit()
     {
-        solid[startCellX * 2 + 1, 0] = false;              // near edge
-        solid[exitCellX * 2 + 1, gridH - 1] = false;       // far edge
+        solid[startCellX * 2 + 1, 0] = false;            
+        solid[exitCellX * 2 + 1, gridH - 1] = false;      
     }
 
-    // --- Geometry ---------------------------------------------------
+    
 
     void BuildFloor()
     {
