@@ -78,26 +78,26 @@ public class MazeGenerator : MonoBehaviour
     List<Renderer> floorRenderers = new List<Renderer>();
 
     [ContextMenu("Generate Preview")]
-    private void generatePreview()
+    void GeneratePreview()
     {
-        generate(Random.Range(int.MinValue, int.MaxValue));
+        Generate(Random.Range(int.MinValue, int.MaxValue));
     }
 
     [ContextMenu("Clear Generated")]
-    public void clearGenerated()
+    public void ClearGenerated()
     {
-        Transform content = getContent();
+        Transform content = GetContent();
         if (content == null) return;
 
         Transform old = content.Find(GeneratedName);
         if (old == null) return;
 
         old.name = "GeneratedOld";
-        safeDestroy(old.gameObject);
+        SafeDestroy(old.gameObject);
     }
 
     // Builds the maze. The same seed always gives the same layout.
-    public void generate(int seed)
+    public void Generate(int seed)
     {
         if (theme == null)
         {
@@ -107,29 +107,29 @@ public class MazeGenerator : MonoBehaviour
 
         rng = new System.Random(useFixedSeed ? fixedSeed : seed);
 
-        Transform content = getContent();
+        Transform content = GetContent();
         if (content == null)
         {
             Debug.LogError("MazeGenerator: no LevelContent found under " + name);
             return;
         }
 
-        clearGenerated();
+        ClearGenerated();
         root = new GameObject(GeneratedName).transform;
         root.SetParent(content, false);
 
-        workOutGridSize();
-        carveMaze();
-        openEntranceAndExit();
-        buildFloor();
-        buildWalls();
-        placeContents();
+        WorkOutGridSize();
+        CarveMaze();
+        OpenEntranceAndExit();
+        BuildFloor();
+        BuildWalls();
+        PlaceContents();
     }
 
     // --- Sizing -----------------------------------------------------
 
     // Works out how many cells fit, then stretches them to fill the face exactly
-    private void workOutGridSize()
+    void WorkOutGridSize()
     {
         float usable = faceSize - edgeMargin * 2f;
 
@@ -149,33 +149,33 @@ public class MazeGenerator : MonoBehaviour
     }
 
     // Even slots are walls, odd slots are corridors
-    private float slotSize(int i)
+    float SlotSize(int i)
     {
         return (i % 2 == 0) ? wallThickness : corridor;
     }
 
     // The centre of one slot, measured from the middle of the face
-    private float slotCenter(int i)
+    float SlotCenter(int i)
     {
         float pos = 0f;
-        for (int k = 0; k < i; k++) pos += slotSize(k);
-        pos += slotSize(i) * 0.5f;
+        for (int k = 0; k < i; k++) pos += SlotSize(k);
+        pos += SlotSize(i) * 0.5f;
         return pos - totalWidth * 0.5f;
     }
 
     // The world position of a cell's centre
-    private Vector3 cellCenter(int cx, int cy, float height)
+    Vector3 CellCenter(int cx, int cy, float height)
     {
-        return new Vector3(slotCenter(cx * 2 + 1), height, slotCenter(cy * 2 + 1));
+        return new Vector3(SlotCenter(cx * 2 + 1), height, SlotCenter(cy * 2 + 1));
     }
 
     // --- Maze carving -----------------------------------------------
 
-    private int cellIndex(int cx, int cy) { return cx + cy * cellsWide; }
-    private bool inCells(int cx, int cy) { return cx >= 0 && cx < cellsWide && cy >= 0 && cy < cellsDeep; }
+    int CellIndex(int cx, int cy) { return cx + cy * cellsWide; }
+    bool InCells(int cx, int cy) { return cx >= 0 && cx < cellsWide && cy >= 0 && cy < cellsDeep; }
 
     // Depth-first carve: start solid, then tunnel passages through
-    private void carveMaze()
+    void CarveMaze()
     {
         solid = new bool[gridW, gridH];
         for (int x = 0; x < gridW; x++)
@@ -193,7 +193,7 @@ public class MazeGenerator : MonoBehaviour
         startCellX = cellsWide / 2;
         startCellY = 0;
 
-        int start = cellIndex(startCellX, startCellY);
+        int start = CellIndex(startCellX, startCellY);
         visited[start] = true;
         solid[startCellX * 2 + 1, startCellY * 2 + 1] = false;
 
@@ -205,7 +205,7 @@ public class MazeGenerator : MonoBehaviour
         while (stack.Count > 0)
         {
             Vector2Int current = stack.Peek();
-            List<Vector2Int> options = unvisitedNeighbours(current, visited);
+            List<Vector2Int> options = UnvisitedNeighbours(current, visited);
 
             if (options.Count == 0)
             {
@@ -221,8 +221,8 @@ public class MazeGenerator : MonoBehaviour
             solid[next.x * 2 + 1, next.y * 2 + 1] = false;
             solid[current.x * 2 + 1 + direction.x, current.y * 2 + 1 + direction.y] = false;
 
-            int nextIndex = cellIndex(next.x, next.y);
-            int currentIndex = cellIndex(current.x, current.y);
+            int nextIndex = CellIndex(next.x, next.y);
+            int currentIndex = CellIndex(current.x, current.y);
 
             visited[nextIndex] = true;
             cellParent[nextIndex] = currentIndex;
@@ -232,12 +232,12 @@ public class MazeGenerator : MonoBehaviour
             stack.Push(next);
         }
 
-        addLoops();
-        findDeadEnds();
-        findExit();
+        AddLoops();
+        FindDeadEnds();
+        FindExit();
     }
 
-    List<Vector2Int> unvisitedNeighbours(Vector2Int cell, bool[] visited)
+    List<Vector2Int> UnvisitedNeighbours(Vector2Int cell, bool[] visited)
     {
         List<Vector2Int> list = new List<Vector2Int>();
 
@@ -251,8 +251,8 @@ public class MazeGenerator : MonoBehaviour
             int nx = cell.x + d.x;
             int ny = cell.y + d.y;
 
-            if (!inCells(nx, ny)) continue;
-            if (visited[cellIndex(nx, ny)]) continue;
+            if (!InCells(nx, ny)) continue;
+            if (visited[CellIndex(nx, ny)]) continue;
 
             list.Add(d);
         }
@@ -268,7 +268,7 @@ public class MazeGenerator : MonoBehaviour
     }
 
     // Knocks a few extra walls out, so there's more than one way through
-    private void addLoops()
+    void AddLoops()
     {
         if (loopChance <= 0f) return;
 
@@ -286,7 +286,7 @@ public class MazeGenerator : MonoBehaviour
     }
 
     // Cells with only one way in and out, which are the best places to hide things
-    private void findDeadEnds()
+    void FindDeadEnds()
     {
         deadEnds.Clear();
 
@@ -305,13 +305,13 @@ public class MazeGenerator : MonoBehaviour
                 if (!solid[gx, gy + 1]) openSides++;
                 if (!solid[gx, gy - 1]) openSides++;
 
-                if (openSides == 1) deadEnds.Add(cellIndex(cx, cy));
+                if (openSides == 1) deadEnds.Add(CellIndex(cx, cy));
             }
         }
     }
 
     // The exit is the deepest cell along the far edge
-    private void findExit()
+    void FindExit()
     {
         exitCellX = 0;
         exitCellY = cellsDeep - 1;
@@ -319,7 +319,7 @@ public class MazeGenerator : MonoBehaviour
 
         for (int cx = 0; cx < cellsWide; cx++)
         {
-            int depth = cellDepth[cellIndex(cx, cellsDeep - 1)];
+            int depth = cellDepth[CellIndex(cx, cellsDeep - 1)];
             if (depth > best)
             {
                 best = depth;
@@ -329,7 +329,7 @@ public class MazeGenerator : MonoBehaviour
     }
 
     // Cuts a gap in the outer wall at the start and at the exit
-    private void openEntranceAndExit()
+    void OpenEntranceAndExit()
     {
         solid[startCellX * 2 + 1, 0] = false;              // near edge
         solid[exitCellX * 2 + 1, gridH - 1] = false;       // far edge
@@ -337,11 +337,11 @@ public class MazeGenerator : MonoBehaviour
 
     // --- Geometry ---------------------------------------------------
 
-    private void buildFloor()
+    void BuildFloor()
     {
         floorRenderers.Clear();
 
-        GameObject floor = makeCube("MazeFloor",
+        GameObject floor = MakeCube("MazeFloor",
             new Vector3(0f, baseHeight - floorThickness * 0.5f, 0f),
             new Vector3(totalWidth, floorThickness, totalDepth),
             theme.floorMaterial);
@@ -351,7 +351,7 @@ public class MazeGenerator : MonoBehaviour
 
     // Merges neighbouring wall slots into long boxes, so the maze
     // is built from a handful of walls rather than hundreds of blocks
-    private void buildWalls()
+    void BuildWalls()
     {
         bool[,] used = new bool[gridW, gridH];
         int built = 0;
@@ -372,7 +372,7 @@ public class MazeGenerator : MonoBehaviour
                 if (runEnd == runStart) continue;
 
                 for (int k = runStart; k <= runEnd; k++) used[k, y] = true;
-                makeWallBox(runStart, runEnd, y, y, built++);
+                MakeWallBox(runStart, runEnd, y, y, built++);
             }
         }
 
@@ -389,18 +389,18 @@ public class MazeGenerator : MonoBehaviour
                 int runEnd = y - 1;
 
                 for (int k = runStart; k <= runEnd; k++) used[x, k] = true;
-                makeWallBox(x, x, runStart, runEnd, built++);
+                MakeWallBox(x, x, runStart, runEnd, built++);
             }
         }
     }
 
     // One wall, spanning a range of slots
-    private void makeWallBox(int x0, int x1, int y0, int y1, int number)
+    void MakeWallBox(int x0, int x1, int y0, int y1, int number)
     {
-        float left = slotCenter(x0) - slotSize(x0) * 0.5f;
-        float right = slotCenter(x1) + slotSize(x1) * 0.5f;
-        float back = slotCenter(y0) - slotSize(y0) * 0.5f;
-        float front = slotCenter(y1) + slotSize(y1) * 0.5f;
+        float left = SlotCenter(x0) - SlotSize(x0) * 0.5f;
+        float right = SlotCenter(x1) + SlotSize(x1) * 0.5f;
+        float back = SlotCenter(y0) - SlotSize(y0) * 0.5f;
+        float front = SlotCenter(y1) + SlotSize(y1) * 0.5f;
 
         Vector3 center = new Vector3((left + right) * 0.5f,
                                      baseHeight + wallHeight * 0.5f,
@@ -408,51 +408,51 @@ public class MazeGenerator : MonoBehaviour
 
         Vector3 size = new Vector3(right - left, wallHeight, front - back);
 
-        makeCube("Wall_" + number, center, size, theme.wallMaterial);
+        MakeCube("Wall_" + number, center, size, theme.wallMaterial);
     }
 
     // --- Contents ---------------------------------------------------
 
-    private void placeContents()
+    void PlaceContents()
     {
         // Spawn at the entrance
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.spawnPoint != null)
         {
             face.spawnPoint.localPosition =
-                cellCenter(startCellX, startCellY, baseHeight + 0.2f);
+                CellCenter(startCellX, startCellY, baseHeight + 0.2f);
             face.spawnPoint.localRotation = Quaternion.identity;
         }
 
         // The altar goes at the deepest dead end, so it's a real journey
-        int altarCell = deepestDeadEnd();
+        int altarCell = DeepestDeadEnd();
         int ax = altarCell % cellsWide;
         int ay = altarCell / cellsWide;
 
-        Vector3 altarPos = cellCenter(ax, ay, baseHeight);
+        Vector3 altarPos = CellCenter(ax, ay, baseHeight);
         DreamAltar altar = BuildAltar(altarPos);
 
         // The door of light sits in the gap in the far wall
         Vector3 doorPos = new Vector3(
-            slotCenter(exitCellX * 2 + 1),
+            SlotCenter(exitCellX * 2 + 1),
             baseHeight + wallHeight * 0.45f,
-            slotCenter(gridH - 1));
+            SlotCenter(gridH - 1));
 
-        GameObject door = makeCube("DreamDoor", doorPos,
+        GameObject door = MakeCube("DreamDoor", doorPos,
             new Vector3(corridor * 0.9f, wallHeight * 0.9f, wallThickness * 1.5f),
             theme.doorMaterial);
 
         door.GetComponent<Collider>().isTrigger = true;
         door.AddComponent<DreamDoor>();
 
-        int placed = placeFragments(altarCell);
-        LevelObjectives.Instance?.setUpLevel(placed, altar, door);
+        int placed = PlaceFragments(altarCell);
+        LevelObjectives.Instance?.SetUpLevel(placed, altar, door);
     }
 
     // The dead end furthest from the start
-    private int deepestDeadEnd()
+    int DeepestDeadEnd()
     {
-        if (deadEnds.Count == 0) return cellIndex(exitCellX, exitCellY);
+        if (deadEnds.Count == 0) return CellIndex(exitCellX, exitCellY);
 
         int best = deadEnds[0];
         foreach (int c in deadEnds)
@@ -497,7 +497,7 @@ public class MazeGenerator : MonoBehaviour
     }
 
     // Fragments go down the dead ends, so searching the maze pays off
-    private int placeFragments(int altarCell)
+    int PlaceFragments(int altarCell)
     {
         int wanted = theme.collectibles;
         if (wanted <= 0) return 0;
@@ -506,7 +506,7 @@ public class MazeGenerator : MonoBehaviour
         foreach (int c in deadEnds)
             if (c != altarCell) spots.Add(c);
 
-        shuffle(spots);
+        Shuffle(spots);
 
         // If there aren't enough dead ends, use the deepest ordinary cells
         if (spots.Count < wanted)
@@ -526,8 +526,8 @@ public class MazeGenerator : MonoBehaviour
             int cx = spots[i] % cellsWide;
             int cy = spots[i] / cellsWide;
 
-            Vector3 pos = cellCenter(cx, cy, baseHeight + fragmentHeight);
-            spawnFragment(i, pos);
+            Vector3 pos = CellCenter(cx, cy, baseHeight + fragmentHeight);
+            SpawnFragment(i, pos);
         }
 
         if (count < wanted)
@@ -537,7 +537,7 @@ public class MazeGenerator : MonoBehaviour
         return count;
     }
 
-    private void spawnFragment(int number, Vector3 localPos)
+    void SpawnFragment(int number, Vector3 localPos)
     {
         GameObject go;
 
@@ -568,9 +568,9 @@ public class MazeGenerator : MonoBehaviour
         if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();
     }
 
-    // this is what helps to create the building blocks for generating the maze
+    // --- Building blocks --------------------------------------------
 
-    private GameObject makeCube(string name, Vector3 localPos, Vector3 size, Material mat)
+    GameObject MakeCube(string name, Vector3 localPos, Vector3 size, Material mat)
     {
         GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = name;
@@ -581,7 +581,7 @@ public class MazeGenerator : MonoBehaviour
         return go;
     }
 
-    private void shuffle(List<int> list)
+    void Shuffle(List<int> list)
     {
         for (int i = list.Count - 1; i > 0; i--)
         {
@@ -590,15 +590,15 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    private void safeDestroy(Object obj)
+    void SafeDestroy(Object obj)
     {
         if (obj == null) return;
         if (Application.isPlaying) Destroy(obj);
         else DestroyImmediate(obj);
     }
 
-    // this then attaches it to the desired face on the cube
-    private Transform getContent()
+    // Attaches the generated level to the desired face on the cube
+    Transform GetContent()
     {
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.levelContent != null) return face.levelContent.transform;

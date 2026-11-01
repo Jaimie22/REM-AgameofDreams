@@ -29,11 +29,11 @@ public class PlayerController : MonoBehaviour
     public string airborneParameter = "";
     public float animationDamping = 0.1f;
 
-    private CharacterController controller;
-    private float verticalVelocity;
-    private float lastGroundedTime;
+    CharacterController controller;
+    float verticalVelocity;
+    float lastGroundedTime;
 
-    private void Awake()
+    void Awake()
     {
         controller = GetComponent<CharacterController>();
         if (animator == null)
@@ -43,15 +43,15 @@ public class PlayerController : MonoBehaviour
     }
 
     // Called when entering a level, so each face can feel different
-    public void applyMovementSettings(float newGravity, float newJumpHeight)
+    public void ApplyMovementSettings(float newGravity, float newJumpHeight)
     {
         gravity = newGravity;
         jumpHeight = newJumpHeight;
     }
 
-    private void Update()
+    void Update()
     {
-        Vector2 input = readMoveInput();
+        Vector2 input = ReadMoveInput();
 
         // Camera-relative directions, flattened onto the ground
         Vector3 forward = cameraTransform.forward;
@@ -87,7 +87,7 @@ public class PlayerController : MonoBehaviour
 
         // Jump, with a little forgiveness just after walking off an edge
         bool canJump = grounded || Time.time - lastGroundedTime <= coyoteTime;
-        if (jumpHeight > 0f && canJump && jumpPressed())
+        if (jumpHeight > 0f && canJump && JumpPressed())
         {
             // The maths that turns a height in units into an upward speed
             verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -110,7 +110,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private Vector2 readMoveInput()
+    Vector2 ReadMoveInput()
     {
         Keyboard kb = Keyboard.current;
         if (kb == null)
@@ -138,20 +138,20 @@ public class PlayerController : MonoBehaviour
         return v;
     }
 
-    private bool jumpPressed()
+    bool JumpPressed()
     {
         Keyboard kb = Keyboard.current;
         return kb != null && kb.spaceKey.wasPressedThisFrame;
     }
 
     // Places the player at a spawn point and shows them
-    public void spawn(Transform point)
+    public void Spawn(Transform point)
     {
-        spawn(point.position, point.rotation);
+        Spawn(point.position, point.rotation);
     }
 
     // Places the player at an exact spot, used when returning from the map
-    public void spawn(Vector3 position, Quaternion rotation)
+    public void Spawn(Vector3 position, Quaternion rotation)
     {
         gameObject.SetActive(true);
 
@@ -163,9 +163,8 @@ public class PlayerController : MonoBehaviour
         verticalVelocity = 0f;
     }
 
-    public void hide()
+    public void Hide()
     {
         gameObject.SetActive(false);
     }
-
 }

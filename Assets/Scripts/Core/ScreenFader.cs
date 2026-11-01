@@ -11,7 +11,7 @@ public class ScreenFader : MonoBehaviour
 
     Image image;
 
-    private void Awake()
+    void Awake()
     {
         // Full-screen canvas drawn on top of everything
         GameObject canvasObj = new GameObject("ScreenFaderCanvas");
@@ -31,11 +31,11 @@ public class ScreenFader : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
 
-        setAlpha(0f);
+        SetAlpha(0f);
     }
 
     // 0 = fully clear, 1 = fully covered
-    public void setAlpha(float alpha)
+    public void SetAlpha(float alpha)
     {
         Color c = fadeColor;
         c.a = alpha;
@@ -43,14 +43,14 @@ public class ScreenFader : MonoBehaviour
     }
 
     // Smoothly fades between two alpha values
-    public IEnumerator fade(float from, float to, float duration)
+    public IEnumerator Fade(float from, float to, float duration)
     {
         float d = Mathf.Max(0.01f, duration);
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / d)
         {
-            setAlpha(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t)));
+            SetAlpha(Mathf.Lerp(from, to, Mathf.SmoothStep(0f, 1f, t)));
             yield return null;
         }
-        setAlpha(to);
+        SetAlpha(to);
     }
 }

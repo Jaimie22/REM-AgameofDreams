@@ -3,77 +3,113 @@ using UnityEngine;
 // Keeps count of the dream fragments on the current level,
 // and reveals the door of light once they've all been delivered to the altar.
 // Put this anywhere in the scene, for example on DreamCube.
+// Each face registers its own set, and the active one is switched on entry.
 public class LevelObjectives : MonoBehaviour
 {
     public static LevelObjectives Instance { get; private set; }
 
-    public int Required { get; private set; }
-    public int Carried { get; private set; }
-    public int Delivered { get; private set; }
+    // One level's worth of objectives
+    class FaceObjectives
+    {
+        public int required;
+        public int carried;
+        public int delivered;
+        public DreamAltar altar;
+        public GameObject door;
+    }
 
-    public bool AllCollected => Carried >= Required && Required > 0;
-    public bool DoorOpen => Delivered >= Required && Required > 0;
+    // One entry per face, keyed by the face's own transform
+    readonly System.Collections.Generic.Dictionary<Transform, FaceObjectives> byFace
+        = new System.Collections.Generic.Dictionary<Transform, FaceObjectives>();
+
+    FaceObjectives active;
+
+    public int Required => active != null ? active.required : 0;
+    public int Carried => active != null ? active.carried : 0;
+    public int Delivered => active != null ? active.delivered : 0;
+
+    public bool AllCollected => active != null && active.carried >= active.required && active.required > 0;
+    public bool DoorOpen => active != null && active.delivered >= active.required && active.required > 0;
 
     // 0 to 1, used by the altar for its glow
     public float Progress => Required > 0 ? (float)Delivered / Required : 0f;
 
-    DreamAltar altar;
-    GameObject door;
-
-    private void Awake()
+    void Awake()
     {
         Instance = this;
     }
 
-    // Called when a level is generated
-    public void setUpLevel(int required, DreamAltar levelAltar, GameObject levelDoor)
+    // Called by a generator when its face is built.
+    // The face is worked out from the altar, so each level keeps its own count.
+    public void SetUpLevel(int required, DreamAltar levelAltar, GameObject levelDoor)
     {
-        Required = required;
-        Carried = 0;
-        Delivered = 0;
+        Transform face = FindFace(levelAltar != null ? levelAltar.transform : levelDoor.transform);
+        if (face == null) return;
 
-        altar = levelAltar;
-        door = levelDoor;
+        FaceObjectives objectives = new FaceObjectives
+        {
+            required = required,
+            carried = 0,
+            delivered = 0,
+            altar = levelAltar,
+            door = levelDoor
+        };
+
+        byFace[face] = objectives;
 
         // The door stays hidden until every fragment is delivered
-        if (door != null) door.SetActive(false);
+        if (levelDoor != null) levelDoor.SetActive(false);
     }
 
-    // Kept so older calls still work
-    public void setRequired(int count)
+    // Called by CubeWorld when a face is entered, so the right level is counted
+    public void SetActiveFace(Transform face)
     {
-        setUpLevel(count, altar, door);
+        active = byFace.TryGetValue(face, out FaceObjectives objectives) ? objectives : null;
+    }
+
+    // Walks up the hierarchy to find which face this object belongs to
+    Transform FindFace(Transform child)
+    {
+        Transform t = child;
+        while (t != null)
+        {
+            if (t.GetComponent<CubeFace>() != null) return t;
+            t = t.parent;
+        }
+        return null;
     }
 
     // A fragment was picked up off the floor
-    public void fragmentCollected()
+    public void FragmentCollected()
     {
-        Carried++;
-        Debug.Log("Dream fragment " + Carried + " of " + Required +
+        if (active == null) return;
+
+        active.carried++;
+        Debug.Log("Dream fragment " + active.carried + " of " + active.required +
                   (AllCollected ? " — take them to the altar." : ""));
     }
 
     // The player reached the altar carrying fragments
-    public void deliverToAltar()
+    public void DeliverToAltar()
     {
-        if (Carried <= 0) return;
+        if (active == null || active.carried <= 0) return;
 
-        while (Carried > 0)
+        while (active.carried > 0)
         {
-            Carried--;
-            Delivered++;
-            if (altar != null) altar.onFragmentDelivered();
+            active.carried--;
+            active.delivered++;
+            if (active.altar != null) active.altar.OnFragmentDelivered();
         }
 
-        Debug.Log("Delivered " + Delivered + " of " + Required + " to the altar.");
+        Debug.Log("Delivered " + active.delivered + " of " + active.required + " to the altar.");
 
-        if (DoorOpen) revealDoor();
+        if (DoorOpen) RevealDoor();
     }
 
-    // Brings the door of light into existence
-    private void revealDoor()
+    // Brings this level's door of light into existence
+    void RevealDoor()
     {
         Debug.Log("The door of light appears.");
-        if (door != null) door.SetActive(true);
+        if (active != null && active.door != null) active.door.SetActive(true);
     }
 }

@@ -267,6 +267,6 @@ public class DreamDoor : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        CubeWorld.Instance.completeCurrentLevel();
+        CubeWorld.Instance.CompleteCurrentLevel();
     }
 }

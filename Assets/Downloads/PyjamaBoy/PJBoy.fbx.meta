@@ -3,7 +3,27 @@ guid: 9e2cca564dfae6749ab411e4746adac2
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: pajama_boy_3d_model_metallic
+    second: {fileID: 2800000, guid: b9c4555788d1eaa4c9695c4ff8debdef, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: pajama_boy_3d_model_roughness
+    second: {fileID: 2800000, guid: 1a769e2a31491974ba9d17ffb15b3937, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: tripo_node_1f853653-a4af-4174-ae31-ee77cbe66341_Clone_BaseColor
+    second: {fileID: 2800000, guid: e4cca54203660c341bc138cbd86ca81e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: tripo_node_1f853653-a4af-4174-ae31-ee77cbe66341_Clone_Normal_Bake
+    second: {fileID: 2800000, guid: b1b249f89382fbc4dbf3a8d4fc24b16f, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -13,7 +33,7 @@ ModelImporter:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 1
-    optimizeGameObjects: 1
+    optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
@@ -27,7 +47,8 @@ ModelImporter:
     animationPositionError: 0.5
     animationScaleError: 0.5
     animationWrapMode: 0
-    extraExposedTransformPaths: []
+    extraExposedTransformPaths:
+    - Root
     extraUserProperties: []
     clipAnimations: []
     isReadable: 0

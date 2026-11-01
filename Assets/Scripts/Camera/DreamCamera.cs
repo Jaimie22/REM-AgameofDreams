@@ -107,27 +107,27 @@ public class DreamCamera : MonoBehaviour
     public Camera Cam { get; private set; }
 
     // Current camera targets
-    private Transform followTarget;
-    private Transform mapFace;
+    Transform followTarget;
+    Transform mapFace;
 
     // Current camera state
-    private bool playing;
-    private Vector3 moveVelocity;
+    bool playing;
+    Vector3 moveVelocity;
 
     // Third person rotation values
-    private float orbitYaw;
-    private float orbitPitch;
+    float orbitYaw;
+    float orbitPitch;
 
     // Tracks when the third person camera becomes active
-    private bool wasThirdPersonActive;
+    bool wasThirdPersonActive;
 
-    private void Awake()
+    void Awake()
     {
         Cam = GetComponent<Camera>();
     }
 
     // Switch to the cube overview
-    public void setOverview()
+    public void SetOverview()
     {
         playing = false;
         followTarget = null;
@@ -136,7 +136,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Switch to the overhead map
-    public void setMapView(Transform face)
+    public void SetMapView(Transform face)
     {
         playing = false;
         followTarget = null;
@@ -145,7 +145,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Switch to the player camera
-    public void setPlaying(Transform target)
+    public void SetPlaying(Transform target)
     {
         playing = true;
         followTarget = target;
@@ -165,9 +165,9 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Immediately move to the correct camera position
-    public void snapToTarget()
+    public void SnapToTarget()
     {
-        getTargetPose(
+        GetTargetPose(
             out Vector3 position,
             out Quaternion rotation,
             out float fov
@@ -178,21 +178,20 @@ public class DreamCamera : MonoBehaviour
         moveVelocity = Vector3.zero;
     }
 
-
-    private void LateUpdate()
+    void LateUpdate()
     {
         // Handle locking and unlocking the cursor
-        updateCursorState();
+        UpdateCursorState();
 
         // Rotate the third person camera with the mouse
         if (playing &&
             followTarget != null &&
             playerCameraStyle == PlayerCameraStyle.ThirdPerson)
         {
-            updateThirdPersonInput();
+            UpdateThirdPersonInput();
         }
 
-        getTargetPose(
+        GetTargetPose(
             out Vector3 position,
             out Quaternion rotation,
             out float fov
@@ -224,9 +223,8 @@ public class DreamCamera : MonoBehaviour
         );
     }
 
-
     // Rotate the third person camera whenever the mouse moves
-    private void updateThirdPersonInput()
+    void UpdateThirdPersonInput()
     {
         if (!enableMouseRotation)
         {
@@ -262,7 +260,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Calculate the camera position for the active view
-    private void getTargetPose(
+    void GetTargetPose(
         out Vector3 position,
         out Quaternion rotation,
         out float fov)
@@ -272,7 +270,7 @@ public class DreamCamera : MonoBehaviour
         {
             if (playerCameraStyle == PlayerCameraStyle.ThirdPerson)
             {
-                getThirdPersonPose(
+                GetThirdPersonPose(
                     out position,
                     out rotation,
                     out fov
@@ -280,7 +278,7 @@ public class DreamCamera : MonoBehaviour
             }
             else
             {
-                getIsometricPose(
+                GetIsometricPose(
                     out position,
                     out rotation,
                     out fov
@@ -332,7 +330,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Calculate the improved isometric camera position
-    private void getIsometricPose(
+    void GetIsometricPose(
         out Vector3 position,
         out Quaternion rotation,
         out float fov)
@@ -355,7 +353,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Calculate the third person camera position
-    private void getThirdPersonPose(
+    void GetThirdPersonPose(
         out Vector3 position,
         out Quaternion rotation,
         out float fov)
@@ -379,7 +377,7 @@ public class DreamCamera : MonoBehaviour
         // Check for walls between the player and camera
         if (enableCameraCollision)
         {
-            distance = getCollisionDistance(
+            distance = GetCollisionDistance(
                 focusPoint,
                 cameraDirection,
                 distance
@@ -391,7 +389,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Move the camera closer when an obstacle blocks the view
-    private float getCollisionDistance(
+    float GetCollisionDistance(
         Vector3 origin,
         Vector3 direction,
         float desiredDistance)
@@ -431,7 +429,7 @@ public class DreamCamera : MonoBehaviour
     }
 
     // Manage the mouse cursor based on the active camera style
-    private void updateCursorState()
+    void UpdateCursorState()
     {
         bool thirdPersonActive =
             playing &&
@@ -444,11 +442,11 @@ public class DreamCamera : MonoBehaviour
         {
             if (thirdPersonActive)
             {
-                lockCursor();
+                LockCursor();
             }
             else
             {
-                unlockCursor();
+                UnlockCursor();
             }
 
             wasThirdPersonActive = thirdPersonActive;
@@ -465,7 +463,7 @@ public class DreamCamera : MonoBehaviour
         // Escape releases the cursor
         if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
         {
-            unlockCursor();
+            UnlockCursor();
             return;
         }
 
@@ -474,28 +472,28 @@ public class DreamCamera : MonoBehaviour
             mouse.leftButton.wasPressedThisFrame &&
             Cursor.lockState != CursorLockMode.Locked)
         {
-            lockCursor();
+            LockCursor();
         }
     }
 
     // Lock and hide the mouse cursor
-    private void lockCursor()
+    void LockCursor()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
     // Unlock and show the mouse cursor
-    private void unlockCursor()
+    void UnlockCursor()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
     // Restore the cursor when the camera is disabled
-    private void OnDisable()
+    void OnDisable()
     {
-        unlockCursor();
+        UnlockCursor();
         wasThirdPersonActive = false;
     }
 }

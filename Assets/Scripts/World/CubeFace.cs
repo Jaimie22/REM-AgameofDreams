@@ -25,33 +25,30 @@ public class CubeFace : MonoBehaviour
     [Tooltip("Objects tinted with the face colour. Filled in automatically by the generator.")]
     public Renderer[] colorRenderers;
 
-    [Tooltip("Optional. The giant dreamer standing behind the cube.")]
-    public DreamerBackdrop dreamerBackdrop;
-
     [Header("Scene View")]
     [Tooltip("Colour of the gizmo line, so faces are still tellable apart in the editor.")]
     public Color gizmoColor = Color.cyan;
 
     // Colour property names: URP shaders use _BaseColor, older shaders use _Color
-    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
-    static readonly int colorId = Shader.PropertyToID("_Color");
+    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
+    static readonly int ColorID = Shader.PropertyToID("_Color");
 
     public bool IsUnlocked { get; private set; }
 
-    private void Awake()
+    void Awake()
     {
-        applyColor();
+        ApplyColor();
     }
 
     // Runs in the editor whenever you change a value, so colours update instantly
-    private void OnValidate()
+    void OnValidate()
     {
-        applyColor();
+        ApplyColor();
     }
 
     // Tints each renderer without touching the shared material.
     // With Tint Floors off, it clears any tint so the real material shows through.
-    public void applyColor()
+    public void ApplyColor()
     {
         if (colorRenderers == null) return;
 
@@ -69,14 +66,14 @@ public class CubeFace : MonoBehaviour
             }
 
             r.GetPropertyBlock(block);
-            block.SetColor(baseColorId, faceColor);
-            block.SetColor(colorId, faceColor);
+            block.SetColor(BaseColorID, faceColor);
+            block.SetColor(ColorID, faceColor);
             r.SetPropertyBlock(block);
         }
     }
 
     // Shows the level or the fog, depending on lock state
-    public void setUnlocked(bool unlocked)
+    public void SetUnlocked(bool unlocked)
     {
         IsUnlocked = unlocked;
         if (levelContent != null) levelContent.SetActive(unlocked);
@@ -84,7 +81,7 @@ public class CubeFace : MonoBehaviour
     }
 
     // Scene view helpers: line = face "up", green sphere = spawn point
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         Gizmos.color = tintFloors ? faceColor : gizmoColor;
         Gizmos.DrawLine(transform.position, transform.position + transform.up * 3f);

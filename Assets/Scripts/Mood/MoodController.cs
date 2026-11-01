@@ -23,24 +23,22 @@ public class MoodController : MonoBehaviour
     public float awaySunIntensity = 0.8f;
     [Tooltip("Ambient light while away from a level.")]
     public Color awayAmbientColor = new Color(0.35f, 0.3f, 0.4f);
-
-    // true in the cube and map views
-    FaceMood target;
-    bool awayFromLevel;
-
     [Tooltip("Colour of the thin haze in the cube view. Match it to your gradient.")]
     public Color awayFogColor = new Color(0.4f, 0.25f, 0.5f);
     [Tooltip("Density of that haze. Very low — just enough to soften the distance.")]
     public float awayFogDensity = 0.004f;
 
+    FaceMood target;
+    bool awayFromLevel;   // true in the cube and map views
+
     // Called by CubeWorld when a face is entered
-    public void setMood(FaceMood mood)
+    public void SetMood(FaceMood mood)
     {
         target = mood;
     }
 
     // Jumps straight to a mood with no blending (used at game start)
-    public void snapToMood(FaceMood mood)
+    public void SnapToMood(FaceMood mood)
     {
         target = mood;
         awayFromLevel = false;
@@ -68,12 +66,12 @@ public class MoodController : MonoBehaviour
     }
 
     // Called when leaving a level for the cube or map view, and when coming back
-    public void setAwayFromLevel(bool away)
+    public void SetAwayFromLevel(bool away)
     {
         awayFromLevel = away;
     }
 
-    private void Update()
+    void Update()
     {
         // Away from the level: swap the heavy level fog for a thin dreamy haze,
         // so the cube reads clearly but still sits in an atmosphere

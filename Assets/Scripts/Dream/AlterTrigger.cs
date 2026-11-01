@@ -12,13 +12,13 @@ public class AltarTrigger : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        LevelObjectives.Instance?.deliverToAltar();
+        LevelObjectives.Instance?.DeliverToAltar();
     }
 
     // Also deliver if the player is already standing there when they collect one
     private void OnTriggerStay(Collider other)
     {
         if (other.GetComponent<PlayerController>() == null) return;
-        LevelObjectives.Instance?.deliverToAltar();
+        LevelObjectives.Instance?.DeliverToAltar();
     }
 }

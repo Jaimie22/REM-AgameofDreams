@@ -46,14 +46,14 @@ public class BackgroundGradient : MonoBehaviour
     float opacity;
     bool wanted;
 
-    private void Awake()
+    void Awake()
     {
         cam = GetComponent<Camera>();
-        buildQuad();
+        BuildQuad();
     }
 
     // A quad parented to the camera, sitting behind the cube
-    private void buildQuad()
+    void BuildQuad()
     {
         GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Quad);
         obj.name = "BackgroundGradient";
@@ -65,22 +65,22 @@ public class BackgroundGradient : MonoBehaviour
         rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         rend.receiveShadows = false;
 
-        gradientMaterial = buildMaterial();
+        gradientMaterial = BuildMaterial();
         rend.material = gradientMaterial;
 
         quad = obj.transform;
         quad.localRotation = Quaternion.identity;
 
-        setOpacity(0f);
+        SetOpacity(0f);
     }
 
-    private Material buildMaterial()
+    Material BuildMaterial()
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null) shader = Shader.Find("Unlit/Transparent");
 
         Material mat = new Material(shader);
-        gradientTexture = buildGradientTexture();
+        gradientTexture = BuildGradientTexture();
         mat.SetTexture("_BaseMap", gradientTexture);
         mat.SetColor("_BaseColor", Color.white);
 
@@ -98,7 +98,7 @@ public class BackgroundGradient : MonoBehaviour
     }
 
     // Paints the gradient into a tall thin texture, with optional stars
-    private Texture2D buildGradientTexture()
+    Texture2D BuildGradientTexture()
     {
         const int width = 64;
         const int height = 256;
@@ -122,14 +122,14 @@ public class BackgroundGradient : MonoBehaviour
             for (int x = 0; x < width; x++) tex.SetPixel(x, y, c);
         }
 
-        if (showStars) scatterStars(tex, width, height);
+        if (showStars) ScatterStars(tex, width, height);
 
         tex.Apply();
         return tex;
     }
 
     // Faint dots, thicker towards the top where the sky is darker
-    private void scatterStars(Texture2D tex, int width, int height)
+    void ScatterStars(Texture2D tex, int width, int height)
     {
         System.Random rng = new System.Random(12345); // fixed, so stars never flicker
 
@@ -152,18 +152,18 @@ public class BackgroundGradient : MonoBehaviour
     }
 
     // Called by CubeWorld when entering or leaving the cube view
-    public void setVisible(bool visible)
+    public void SetVisible(bool visible)
     {
         wanted = visible;
     }
 
-    private void LateUpdate()
+    void LateUpdate()
     {
         if (quad == null || cam == null) return;
 
         bool show = wanted || alwaysVisible;
         opacity = Mathf.MoveTowards(opacity, show ? 1f : 0f, fadeSpeed * Time.deltaTime);
-        setOpacity(opacity);
+        SetOpacity(opacity);
 
         if (opacity <= 0.001f) return;
 
@@ -178,7 +178,7 @@ public class BackgroundGradient : MonoBehaviour
         quad.localScale = new Vector3(height * cam.aspect * 1.1f, height * 1.1f, 1f);
     }
 
-    private void setOpacity(float value)
+    void SetOpacity(float value)
     {
         if (gradientMaterial == null || quad == null) return;
 
@@ -189,12 +189,12 @@ public class BackgroundGradient : MonoBehaviour
     }
 
     // Rebuilds the texture when colours are changed during Play
-    public void refreshColors()
+    public void RefreshColors()
     {
         if (gradientMaterial == null) return;
 
         if (gradientTexture != null) Destroy(gradientTexture);
-        gradientTexture = buildGradientTexture();
+        gradientTexture = BuildGradientTexture();
         gradientMaterial.SetTexture("_BaseMap", gradientTexture);
     }
 }

@@ -35,9 +35,9 @@ public class DreamAltar : MonoBehaviour
     [Tooltip("How brightly the orbiting shards glow.")]
     [Range(0f, 8f)] public float shardEmission = 1.5f;
 
-    static readonly int baseColorId = Shader.PropertyToID("_BaseColor");
-    static readonly int colorId = Shader.PropertyToID("_Color");
-    static readonly int emissionId = Shader.PropertyToID("_EmissionColor");
+    static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
+    static readonly int ColorID = Shader.PropertyToID("_Color");
+    static readonly int EmissionID = Shader.PropertyToID("_EmissionColor");
 
     Material instanceMaterial;
     Light altarLight;
@@ -47,7 +47,7 @@ public class DreamAltar : MonoBehaviour
     float pulse;         // extra brightness that fades away
     int shownFragments;
 
-    private void Start()
+    void Start()
     {
         Renderer rend = GetComponent<Renderer>();
         if (rend != null)
@@ -74,18 +74,18 @@ public class DreamAltar : MonoBehaviour
         orbitRoot = new GameObject("DeliveredFragments").transform;
         orbitRoot.SetParent(transform, false);
 
-        updateLook();
+        UpdateLook();
     }
 
     // Called by LevelObjectives when a fragment is delivered
-    public void onFragmentDelivered()
+    public void OnFragmentDelivered()
     {
         pulse = pulseStrength;
-        if (showDeliveredFragments) addOrbitingFragment();
+        if (showDeliveredFragments) AddOrbitingFragment();
     }
 
     // Adds one small glowing shard circling above the altar
-    private void addOrbitingFragment()
+    void AddOrbitingFragment()
     {
         GameObject shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
         shard.name = "Delivered_" + shownFragments;
@@ -97,18 +97,18 @@ public class DreamAltar : MonoBehaviour
 
         Renderer rend = shard.GetComponent<Renderer>();
         Material mat = rend.material;
-        mat.SetColor(baseColorId, fullColor * colorStrength);
-        mat.SetColor(colorId, fullColor * colorStrength);
+        mat.SetColor(BaseColorID, fullColor * colorStrength);
+        mat.SetColor(ColorID, fullColor * colorStrength);
         mat.EnableKeyword("_EMISSION");
-        mat.SetColor(emissionId, fullColor * shardEmission);
+        mat.SetColor(EmissionID, fullColor * shardEmission);
 
         // Spread them evenly around the circle
         shownFragments++;
-        layOutOrbit();
+        LayOutOrbit();
     }
 
     // Spaces the delivered shards evenly around the ring
-    private void layOutOrbit()
+    void LayOutOrbit()
     {
         int count = orbitRoot.childCount;
         for (int i = 0; i < count; i++)
@@ -121,7 +121,7 @@ public class DreamAltar : MonoBehaviour
         }
     }
 
-    private void Update()
+    void Update()
     {
         // Ease towards however full the altar actually is
         float target = LevelObjectives.Instance != null
@@ -131,22 +131,22 @@ public class DreamAltar : MonoBehaviour
         progress = Mathf.Lerp(progress, target, blendSpeed * Time.deltaTime);
         pulse = Mathf.Lerp(pulse, 0f, blendSpeed * Time.deltaTime);
 
-        updateLook();
+        UpdateLook();
 
         if (orbitRoot != null)
             orbitRoot.Rotate(Vector3.up, orbitSpeed * Time.deltaTime, Space.Self);
     }
 
-    private void updateLook()
+    void UpdateLook()
     {
         Color c = Color.Lerp(emptyColor, fullColor, progress);
 
         if (instanceMaterial != null)
         {
             Color baseColor = c * colorStrength;
-            instanceMaterial.SetColor(baseColorId, baseColor);
-            instanceMaterial.SetColor(colorId, baseColor);
-            instanceMaterial.SetColor(emissionId, c * (emissionStrength * progress + pulse));
+            instanceMaterial.SetColor(BaseColorID, baseColor);
+            instanceMaterial.SetColor(ColorID, baseColor);
+            instanceMaterial.SetColor(EmissionID, c * (emissionStrength * progress + pulse));
         }
 
         if (altarLight != null)

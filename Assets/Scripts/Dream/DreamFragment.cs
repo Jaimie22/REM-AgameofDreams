@@ -97,7 +97,7 @@ public class DreamFragment : MonoBehaviour
         if (other.GetComponent<PlayerController>() == null) return;
 
         collected = true;
-        LevelObjectives.Instance?.fragmentCollected();
+        LevelObjectives.Instance?.FragmentCollected();
         gameObject.SetActive(false);
     }
 }
