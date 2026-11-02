@@ -15,6 +15,10 @@ public class CubeFace : MonoBehaviour
     [Tooltip("Grey 'fog' object shown while this face is locked.")]
     public GameObject lockedCover;
 
+    [Header("Camera")]
+    [Tooltip("Which camera the player gets on this face. Set Face_3 (the maze) to ThirdPerson.")]
+    public DreamCamera.PlayerCameraStyle cameraStyle = DreamCamera.PlayerCameraStyle.Isometric;
+
     [Header("Face Colour")]
     [Tooltip("Untick to leave materials exactly as they are — needed for glass or any textured material.")]
     public bool tintFloors = false;
@@ -92,4 +96,4 @@ public class CubeFace : MonoBehaviour
             Gizmos.DrawWireSphere(spawnPoint.position, 0.4f);
         }
     }
-}
+}

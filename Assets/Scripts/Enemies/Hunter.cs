@@ -27,6 +27,10 @@ public class Hunter : MonoBehaviour
     [Tooltip("How high above the maze floor it stands.")]
     public float standHeight = 0.1f;
 
+    [Header("Safety")]
+    [Tooltip("If it ever ends up further than this from where it should be, it's put back on its cell, so it can't drift off the map.")]
+    public float maxStrayDistance = 6f;
+
     [Header("Tension")]
     [Range(0f, 1f)] public float wanderingTension = 0.15f;
     [Range(0f, 1f)] public float trackingTension = 0.4f;
@@ -41,11 +45,27 @@ public class Hunter : MonoBehaviour
 
     int cellX, cellY;          // the cell it's standing in
     int nextX, nextY;          // the cell it's walking towards
+    int homeX, homeY;          // the cell it started in, where it goes back to after catching him
+    bool hasHome;
     bool moving;
+
+    void Awake()
+    {
+        StopRootMotion();
+    }
 
     void Start()
     {
         TryFindMaze();
+    }
+
+    // The crawl animation carries its own movement, which pushes the hunter along on top of
+    // the script. It kept doing that while the player was in the map or cube view, so the
+    // hunter crawled off the edge of the maze. The script walks it cell to cell instead.
+    void StopRootMotion()
+    {
+        foreach (Animator animator in GetComponentsInChildren<Animator>())
+            animator.applyRootMotion = false;
     }
 
     // Finds the maze, whenever the spawner gets round to assigning the face
@@ -85,6 +105,7 @@ public class Hunter : MonoBehaviour
         if (!moving) ChooseNextCell(player);
 
         StepTowardsNextCell();
+        KeepOnPath();
         FeedTension();
     }
 
@@ -105,6 +126,14 @@ public class Hunter : MonoBehaviour
         nextX = cellX;
         nextY = cellY;
         moving = false;
+
+        // The first cell it lands in is its home
+        if (!hasHome)
+        {
+            homeX = cellX;
+            homeY = cellY;
+            hasHome = true;
+        }
     }
 
     // Picks which neighbouring cell to walk into next
@@ -232,6 +261,39 @@ public class Hunter : MonoBehaviour
         }
     }
 
+    // If anything ever pushes it off its path, put it back on its cell
+    // rather than letting it drift out of the maze and off the map
+    void KeepOnPath()
+    {
+        Vector3 cellCentre = CellWorld(cellX, cellY);
+        Vector3 destination = CellWorld(nextX, nextY);
+
+        float strayed = Mathf.Min(Vector3.Distance(transform.position, cellCentre),
+                                  Vector3.Distance(transform.position, destination));
+
+        if (strayed <= maxStrayDistance) return;
+
+        Debug.LogWarning("Hunter strayed off its path, so it was put back on its cell.");
+
+        transform.position = cellCentre;
+        nextX = cellX;
+        nextY = cellY;
+        moving = false;
+    }
+
+    // Puts it back in the cell it started in, so it isn't waiting beside the player's spawn
+    void ResetToHome()
+    {
+        cellX = homeX;
+        cellY = homeY;
+        nextX = homeX;
+        nextY = homeY;
+        moving = false;
+
+        transform.position = CellWorld(homeX, homeY);
+        CurrentState = State.Wandering;
+    }
+
     // The world position of a cell, standing on its floor
     Vector3 CellWorld(int cx, int cy)
     {
@@ -297,8 +359,8 @@ public class Hunter : MonoBehaviour
         // The trail goes cold, so it has to find him again
         ScentTrail.Instance?.Clear();
 
-        CurrentState = State.Wandering;
-        moving = false;
+        // And it goes back to where it started, rather than sitting on top of him
+        ResetToHome();
     }
 
     bool IsActiveFace()
@@ -311,4 +373,4 @@ public class Hunter : MonoBehaviour
             && face != null
             && maze != null;
     }
-}
+}

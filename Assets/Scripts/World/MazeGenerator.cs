@@ -129,6 +129,9 @@ public class MazeGenerator : MonoBehaviour
         cy = 0;
         if (solid == null) return false;
 
+        bool foundX = false;
+        bool foundY = false;
+
         // Walk the slots to find which cell this falls inside
         for (int i = 0; i < cellsWide; i++)
         {
@@ -136,21 +139,24 @@ public class MazeGenerator : MonoBehaviour
             if (Mathf.Abs(local.x - centre) <= corridor * 0.5f + wallThickness * 0.5f)
             {
                 cx = i;
-                break;
-            }
-        }
-        // Walk the slots to find which cell this falls inside
-        for (int i = 0; i < cellsDeep; i++)
-        {   
-            float centre = SlotCenter(i * 2 + 1);
-            if (Mathf.Abs(local.z - centre) <= corridor * 0.5f + wallThickness * 0.5f)
-            {
-                cy = i;
+                foundX = true;
                 break;
             }
         }
 
-        return InCells(cx, cy);
+        for (int i = 0; i < cellsDeep; i++)
+        {
+            float centre = SlotCenter(i * 2 + 1);
+            if (Mathf.Abs(local.z - centre) <= corridor * 0.5f + wallThickness * 0.5f)
+            {
+                cy = i;
+                foundY = true;
+                break;
+            }
+        }
+
+        // Outside the maze (or in the outer wall) is not a cell, rather than "cell 0,0"
+        return foundX && foundY;
     }
 
     // Builds the maze. The same seed always gives the same layout.
@@ -665,4 +671,4 @@ public class MazeGenerator : MonoBehaviour
         if (face != null && face.levelContent != null) return face.levelContent.transform;
         return transform.Find("LevelContent");
     }
-}
+}

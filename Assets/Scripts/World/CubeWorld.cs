@@ -18,6 +18,8 @@ public class CubeWorld : MonoBehaviour
     public PlayerController player;
     [Tooltip("Optional. Leave empty and one is created automatically.")]
     public ScreenFader screenFader;
+    [Tooltip("Optional. Leave empty and one is created automatically.")]
+    public DetectionIndicator detectionIndicator;
     [Tooltip("Optional. Handles fog and lighting changes between faces.")]
     public MoodController moodController;
 
@@ -84,6 +86,10 @@ public class CubeWorld : MonoBehaviour
         if (screenFader == null)
             screenFader = gameObject.AddComponent<ScreenFader>();
 
+        // The green / amber / red light showing how aware the hunter is, also created automatically
+        if (detectionIndicator == null)
+            detectionIndicator = gameObject.AddComponent<DetectionIndicator>();
+
         // One seed per face, rolled fresh for this playthrough
         faceSeeds = new int[faces.Length];
         for (int i = 0; i < faces.Length; i++)
@@ -114,6 +120,9 @@ public class CubeWorld : MonoBehaviour
         BiomeGenerator biome = faces[index].GetComponent<BiomeGenerator>();
         if (biome != null) biome.Generate(faceSeeds[index]);
 
+        GearGenerator gears = faces[index].GetComponent<GearGenerator>();
+        if (gears != null) gears.Generate(faceSeeds[index]);
+
         Physics.SyncTransforms(); // make sure the new colliders are in place
     }
 
@@ -131,8 +140,18 @@ public class CubeWorld : MonoBehaviour
         BiomeGenerator biome = faces[index].GetComponent<BiomeGenerator>();
         if (biome != null && biome.theme != null) levelTheme = biome.theme;
 
+        GearGenerator gears = faces[index].GetComponent<GearGenerator>();
+        if (gears != null && gears.theme != null) levelTheme = gears.theme;
+
         if (levelTheme == null) return;
         player.ApplyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
+    }
+
+    // Gives the player the camera this face asks for (isometric or third person)
+    void ApplyCameraStyle(int index)
+    {
+        if (dreamCamera == null) return;
+        dreamCamera.playerCameraStyle = faces[index].cameraStyle;
     }
 
     // Tells LevelObjectives which face's fragments and door are in play
@@ -285,6 +304,7 @@ public class CubeWorld : MonoBehaviour
         ApplyObjectives(CurrentFaceIndex);
 
         player.Spawn(worldPos, worldRot);
+        ApplyCameraStyle(CurrentFaceIndex);
         dreamCamera.SetPlaying(player.transform);
 
         CurrentMode = Mode.Playing;
@@ -316,6 +336,7 @@ public class CubeWorld : MonoBehaviour
         ApplyObjectives(index);
 
         player.Spawn(face.spawnPoint);
+        ApplyCameraStyle(index);
         dreamCamera.SetPlaying(player.transform);
         dreamCamera.SnapToTarget();
         ApplyMood(index, true);
@@ -473,6 +494,7 @@ public class CubeWorld : MonoBehaviour
         ApplyObjectives(index);
 
         player.Spawn(face.spawnPoint);
+        ApplyCameraStyle(index);
         dreamCamera.SetPlaying(player.transform);
         CurrentMode = Mode.Playing;
     }
@@ -496,4 +518,4 @@ public class CubeWorld : MonoBehaviour
 
         GoToCubeView();
     }
-}
+}
