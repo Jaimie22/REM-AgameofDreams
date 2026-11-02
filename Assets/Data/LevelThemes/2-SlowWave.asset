@@ -36,3 +36,25 @@ MonoBehaviour:
   wallMaterial: {fileID: 0}
   doorMaterial: {fileID: 0}
   collectibleMaterial: {fileID: 0}
+  footstepClips:
+  - {fileID: 8300000, guid: ea1f7a0121565da468bf7b4283d6f58e, type: 3}
+  - {fileID: 8300000, guid: 2f6cc2b96c526b841a44f07d08e2b775, type: 3}
+  - {fileID: 8300000, guid: bbd31854cfbbf304197b2467f9691340, type: 3}
+  - {fileID: 8300000, guid: 93dc8fef4bd8c9740bb488eed3b7f209, type: 3}
+  - {fileID: 8300000, guid: ded18d2f662cf3d4586295a6b71dc8ad, type: 3}
+  footstepVolume: 1
+  jumpClip: {fileID: 8300000, guid: 7682ee7b3d68c7047843e037d9655e5b, type: 3}
+  pickupClip: {fileID: 8300000, guid: eb86070f502834e4fa6bc9e9fbea8c5f, type: 3}
+  doorClip: {fileID: 8300000, guid: fa2f6406fe373464188d1b257c095f7e, type: 3}
+  ambientClip: {fileID: 8300000, guid: bfb79f4366e3d2c46bdf02a2847e577b, type: 3}
+  ambientVolume: 0.5
+  digClips:
+  - {fileID: 8300000, guid: de72b3e91c9e8f146bfe82506da88d84, type: 3}
+  - {fileID: 8300000, guid: 16fdce3f39648cb4fbf3cb8235cc02b8, type: 3}
+  - {fileID: 8300000, guid: fb1fe589bd3d32c4fb2128c47aeaefeb, type: 3}
+  waterFlowClip: {fileID: 8300000, guid: 8cd80ceff1b068a46900785575af895c, type: 3}
+  waterFlowVolume: 0.6
+  crawlClips: []
+  crawlVolume: 1
+  attackClip: {fileID: 0}
+  deathClip: {fileID: 0}

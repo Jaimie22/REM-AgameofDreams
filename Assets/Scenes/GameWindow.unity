@@ -12407,8 +12407,13 @@ MonoBehaviour:
   isoFOV: 15
   isoFocusHeight: 0.8
   isoLookAheadDistance: 0.75
+  topDownDistance: 7
+  topDownPitch: 70
+  topDownYaw: 0
+  topDownFOV: 60
+  topDownFocusHeight: 1.1
   thirdPersonDistance: 5
-  thirdPersonHeight: 2.5
+  thirdPersonFocusHeight: 1.1
   thirdPersonPitch: 15
   thirdPersonFOV: 60
   enableMouseRotation: 1
@@ -12416,12 +12421,21 @@ MonoBehaviour:
   invertMouseY: 0
   minimumPitch: -20
   maximumPitch: 70
+  minimumCameraHeight: 0.8
+  hideBlockingWalls: 1
+  blockCheckRadius: 0.4
   enableCameraCollision: 1
   collisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   collisionRadius: 0.2
   collisionPadding: 0.1
+  minimumCameraDistance: 2.5
+  lockCursorWhilePlaying: 1
+  enableZoom: 1
+  minimumZoom: 0.35
+  zoomStep: 0.1
+  zoomSmoothing: 10
   cubeCenter: {fileID: 619689962}
   overviewDistance: 45
   overviewAngles: {x: 20, y: 0}
@@ -14509,7 +14523,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
       cycleCount: 1
-      repeatInterval: 0.0001
+      repeatInterval: 0.01
       probability: 1
   SizeModule:
     enabled: 1
@@ -36439,6 +36453,9 @@ MonoBehaviour:
   mapReturnDuration: 0.6
   dragRotateSpeed: 0.3
   doubleClickTime: 0.3
+  cubeViewMusic: {fileID: 8300000, guid: 18732b0c5a7b87d4ab662467bad9f17f, type: 3}
+  cubeViewMusicVolume: 0.35
+  musicFadeTime: 1.5
   faceTurnDuration: 1.2
   fallResetDistance: 10
   unlockAllFaces: 1
@@ -36531,6 +36548,8 @@ MonoBehaviour:
   maxVolume: 0.7
   heartbeatClip: {fileID: 0}
   thumpFrequency: 48
+  quietAfter: 0.5
+  fadeOutSpeed: 3
   blendSpeed: 1.5
 --- !u!114 &619689966
 MonoBehaviour:
@@ -85825,7 +85844,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
       cycleCount: 1
-      repeatInterval: 0.0001
+      repeatInterval: 0.01
       probability: 1
   SizeModule:
     enabled: 1
@@ -98709,7 +98728,6 @@ GameObject:
   - component: {fileID: 1687725630}
   - component: {fileID: 1687725633}
   - component: {fileID: 1687725631}
-  - component: {fileID: 1687725632}
   m_Layer: 0
   m_Name: Face_2_Front
   m_TagString: Untagged
@@ -98793,18 +98811,6 @@ MonoBehaviour:
   flowStepTime: 0.12
   vatFillTime: 4
   doorDelay: 0.6
---- !u!114 &1687725632
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1687725627}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a2d3ef26cfb4a94b897be8f44f1c250, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1687725633
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101960,7 +101966,7 @@ MonoBehaviour:
   spawnPoint: {fileID: 1393163146}
   levelContent: {fileID: 87610544}
   lockedCover: {fileID: 1562470598}
-  cameraStyle: 0
+  cameraStyle: 2
   tintFloors: 0
   faceColor: {r: 1, g: 1, b: 1, a: 1}
   colorRenderers:
@@ -102082,7 +102088,7 @@ MonoBehaviour:
   baseHeight: 1
   corridorWidth: 2
   wallThickness: 0.6
-  wallHeight: 1
+  wallHeight: 2
   straightBias: 0.2
   loopChance: 0.06
   floorThickness: 1
@@ -102107,6 +102113,7 @@ MonoBehaviour:
   hunterPrefab: {fileID: 8667489010519003238, guid: 20afa8c24e9a62149b8e09978b62867f, type: 3}
   faceIndex: 2
   minDistanceFromSpawn: 18
+  oppositeMargin: 4
   standHeight: 0.2
   clearance: 1
   placementAttempts: 60
@@ -104749,7 +104756,7 @@ ParticleSystem:
           m_PostInfinity: 2
           m_RotationOrder: 4
       cycleCount: 1
-      repeatInterval: 0.0001
+      repeatInterval: 0.01
       probability: 1
   SizeModule:
     enabled: 1
@@ -115485,6 +115492,12 @@ MonoBehaviour:
   pillarSize: {x: 1.2, y: 1.8}
   pillarHeight: 3
   addAtmosphere: 1
+  placeClip: {fileID: 8300000, guid: 1a384628617157c41a9616831ae05f80, type: 3}
+  meshClip: {fileID: 8300000, guid: 8c2a241fb1dc6c743ae25e65b24bc659, type: 3}
+  startClip: {fileID: 8300000, guid: ac0ae50d9e74ee84295348b4bcc015b8, type: 3}
+  cageClip: {fileID: 8300000, guid: 3c27c39efd4ce4c4f9261e7492b57a75, type: 3}
+  steamClip: {fileID: 8300000, guid: f534420a6bfe6e74f9582a32a9b64314, type: 3}
+  steamVolume: 0.6
   floorColor: {r: 0.28, g: 0.27, b: 0.3, a: 1}
   wallColor: {r: 0.2, g: 0.2, b: 0.24, a: 1}
   pillarColor: {r: 0.34, g: 0.32, b: 0.36, a: 1}
@@ -115538,6 +115551,8 @@ MonoBehaviour:
   ventCount: 3
   puffInterval: {x: 3, y: 6}
   steamColor: {r: 0.9, g: 0.9, b: 0.85, a: 0.5}
+  steamClip: {fileID: 0}
+  steamVolume: 0.6
   addChimneys: 1
   chimneyCount: 4
   chimneyHeight: 7
@@ -115566,6 +115581,10 @@ MonoBehaviour:
   meshTolerance: 0.05
   openDelay: 1.2
   openTime: 1.8
+  placeClip: {fileID: 0}
+  meshClip: {fileID: 0}
+  startClip: {fileID: 0}
+  cageClip: {fileID: 0}
 --- !u!21 &2019748855
 Material:
   serializedVersion: 8

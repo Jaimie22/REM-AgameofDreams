@@ -49,6 +49,13 @@ public class CubeWorld : MonoBehaviour
     [Tooltip("Max seconds between two clicks to count as a double-click.")]
     public float doubleClickTime = 0.3f;
 
+    [Header("Cube View Music")]
+    [Tooltip("Plays while the cube or map is on screen, and fades away when a level starts. Leave empty for none.")]
+    public AudioClip cubeViewMusic;
+    [Range(0f, 1f)] public float cubeViewMusicVolume = 0.35f;
+    [Tooltip("Seconds the music takes to fade in and out.")]
+    public float musicFadeTime = 1.5f;
+
     [Header("Transitions")]
     [Tooltip("Seconds it takes the cube to turn a face to the top.")]
     public float faceTurnDuration = 1.2f;
@@ -75,6 +82,8 @@ public class CubeWorld : MonoBehaviour
     Vector3 savedLocalPosition;
     Quaternion savedLocalRotation;
 
+    AudioSource musicSource;
+
     void Awake()
     {
         Instance = this;
@@ -89,6 +98,18 @@ public class CubeWorld : MonoBehaviour
         // The green / amber / red light showing how aware the hunter is, also created automatically
         if (detectionIndicator == null)
             detectionIndicator = gameObject.AddComponent<DetectionIndicator>();
+
+        // The music for the cube view, silent until it's wanted
+        if (cubeViewMusic != null)
+        {
+            musicSource = gameObject.AddComponent<AudioSource>();
+            musicSource.clip = cubeViewMusic;
+            musicSource.loop = true;
+            musicSource.playOnAwake = false;
+            musicSource.spatialBlend = 0f;
+            musicSource.volume = 0f;
+            musicSource.Play();
+        }
 
         // One seed per face, rolled fresh for this playthrough
         faceSeeds = new int[faces.Length];
@@ -143,6 +164,9 @@ public class CubeWorld : MonoBehaviour
         GearGenerator gears = faces[index].GetComponent<GearGenerator>();
         if (gears != null && gears.theme != null) levelTheme = gears.theme;
 
+        // The footsteps and other sounds follow the level's surface
+        player.Audio.SetSurface(levelTheme);
+
         if (levelTheme == null) return;
         player.ApplyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
     }
@@ -160,8 +184,22 @@ public class CubeWorld : MonoBehaviour
         LevelObjectives.Instance?.SetActiveFace(faces[index].transform);
     }
 
+    // Fades the cube view music in while the cube or map is showing, and out otherwise
+    void UpdateMusic()
+    {
+        if (musicSource == null) return;
+
+        bool wanted = CurrentMode == Mode.Overview || CurrentMode == Mode.Map;
+        float target = wanted ? cubeViewMusicVolume : 0f;
+        float step = Time.unscaledDeltaTime / Mathf.Max(0.1f, musicFadeTime);
+
+        musicSource.volume = Mathf.MoveTowards(musicSource.volume, target, step * Mathf.Max(cubeViewMusicVolume, 0.1f));
+    }
+
     void Update()
     {
+        UpdateMusic();
+
         if (CurrentMode == Mode.Transitioning) return;
 
         Keyboard kb = Keyboard.current;
@@ -174,18 +212,22 @@ public class CubeWorld : MonoBehaviour
             return;
         }
 
+        // Escape pulls out to the cube, where it can be spun. Pressing it again goes back in.
+        if (kb != null && kb.escapeKey.wasPressedThisFrame)
+        {
+            if (CurrentMode == Mode.Playing) GoToCubeView();
+            else ReturnToLevel();
+            return;
+        }
+
         if (mouse == null) return;
         float scroll = mouse.scroll.ReadValue().y;
 
         switch (CurrentMode)
         {
             case Mode.Playing:
-                // Scroll down = out to the cube
-                if (scroll < 0f)
-                {
-                    GoToCubeView();
-                    return;
-                }
+                // The scroll wheel zooms the camera while playing (see DreamCamera).
+                // To reach the cube, press M for the map, then scroll down.
 
                 // Respawn if the player falls off the level
                 CubeFace face = faces[CurrentFaceIndex];

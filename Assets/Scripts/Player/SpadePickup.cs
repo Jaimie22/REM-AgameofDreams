@@ -60,6 +60,7 @@ public class SpadePickup : MonoBehaviour
         if (player == null) return;
 
         collected = true;
+        player.Audio.PlayPickup();
 
         GiveToPlayer(player.transform);
 

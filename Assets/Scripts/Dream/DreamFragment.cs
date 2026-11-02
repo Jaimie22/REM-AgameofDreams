@@ -94,9 +94,12 @@ public class DreamFragment : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (collected) return;
-        if (other.GetComponent<PlayerController>() == null) return;
+
+        PlayerController player = other.GetComponent<PlayerController>();
+        if (player == null) return;
 
         collected = true;
+        player.Audio.PlayPickup();
         LevelObjectives.Instance?.FragmentCollected();
         gameObject.SetActive(false);
     }

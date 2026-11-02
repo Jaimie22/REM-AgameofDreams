@@ -15,6 +15,8 @@ public class HunterSpawner : MonoBehaviour
     [Header("Placement")]
     [Tooltip("How far from the player's spawn it starts, in units.")]
     public float minDistanceFromSpawn = 20f;
+    [Tooltip("It always starts on the opposite half of the maze from the player. This is how far past the middle, in units.")]
+    public float oppositeMargin = 4f;
     public float standHeight = 0.2f;
     [Tooltip("How much clear space it needs, so it never starts inside a wall.")]
     public float clearance = 1f;
@@ -85,7 +87,7 @@ public class HunterSpawner : MonoBehaviour
         }
     }
 
-    // Looks for open floor far from the player, rather than just mirroring the spawn
+    // Looks for open floor on the far side of the maze from the player
     Vector3 PickSpot(CubeFace face, Transform parent)
     {
         Vector3 spawn = face.spawnPoint != null
@@ -95,51 +97,70 @@ public class HunterSpawner : MonoBehaviour
         MazeGenerator maze = GetComponent<MazeGenerator>();
         float reach = maze != null ? maze.faceSize * 0.45f : 13f;
 
-        Vector3 best = spawn;
+        // Best: the far side, and a long way from the player
+        if (TryFindSpot(parent, spawn, reach, true, true, out Vector3 spot)) return Raise(spot);
+
+        // Next: still the far side, taking the furthest spot found
+        if (TryFindSpot(parent, spawn, reach, true, false, out spot)) return Raise(spot);
+
+        // Last resort, so it always ends up somewhere: the furthest clear spot anywhere
+        TryFindSpot(parent, spawn, reach, false, false, out spot);
+        return Raise(spot);
+    }
+
+    Vector3 Raise(Vector3 spot)
+    {
+        spot.y += standHeight;
+        return spot;
+    }
+
+    // Tries random spots until one fits. With needDistance it stops at the first spot that is
+    // far enough away, otherwise it keeps the furthest one found.
+    bool TryFindSpot(Transform parent, Vector3 spawn, float reach,
+                     bool farSideOnly, bool needDistance, out Vector3 found)
+    {
+        found = spawn;
         float bestDistance = -1f;
 
-        for (int i = 0; i < placementAttempts; i++)
+        // Which way the player's side of the maze lies, measured from the middle of the face
+        Vector2 playerSide = new Vector2(spawn.x, spawn.z);
+        bool hasSide = playerSide.magnitude > 1f;
+        if (hasSide) playerSide.Normalize();
+
+        for (int i = 0; i < placementAttempts * 3; i++)
         {
-            // Somewhere random on the face
             Vector3 candidate = new Vector3(
                 Random.Range(-reach, reach),
                 spawn.y,
                 Random.Range(-reach, reach));
 
+            // Never on the player's half of the maze
+            if (farSideOnly && hasSide)
+            {
+                float along = Vector2.Dot(new Vector2(candidate.x, candidate.z), playerSide);
+                if (along > -oppositeMargin) continue;
+            }
+
             float distance = Vector3.Distance(candidate, spawn);
-            if (distance < minDistanceFromSpawn) continue;
+            if (needDistance && distance < minDistanceFromSpawn) continue;
 
             // Must be standing in open corridor, not inside a wall
             if (!IsClear(parent, candidate)) continue;
 
-            best = candidate;
-            bestDistance = distance;
-            break;
-        }
-
-        // Nothing ideal turned up, so take the furthest clear spot we can find
-        if (bestDistance < 0f)
-        {
-            for (int i = 0; i < placementAttempts; i++)
+            if (needDistance)
             {
-                Vector3 candidate = new Vector3(
-                    Random.Range(-reach, reach),
-                    spawn.y,
-                    Random.Range(-reach, reach));
+                found = candidate;
+                return true;
+            }
 
-                if (!IsClear(parent, candidate)) continue;
-
-                float distance = Vector3.Distance(candidate, spawn);
-                if (distance > bestDistance)
-                {
-                    bestDistance = distance;
-                    best = candidate;
-                }
+            if (distance > bestDistance)
+            {
+                bestDistance = distance;
+                found = candidate;
             }
         }
 
-        best.y += standHeight;
-        return best;
+        return bestDistance >= 0f;
     }
 
     // True if there's room to stand here without overlapping a wall

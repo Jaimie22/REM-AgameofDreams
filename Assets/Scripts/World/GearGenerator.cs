@@ -75,6 +75,19 @@ public class GearGenerator : MonoBehaviour
     [Tooltip("Adds the steampunk lamps, steam vents, chimney smoke and pipes. Tune them on the GearAtmosphere component.")]
     public bool addAtmosphere = true;
 
+    [Header("Sounds")]
+    [Tooltip("Fitting a gear onto a peg. Also played, quietly, when one is put on the floor.")]
+    public AudioClip placeClip;
+    [Tooltip("A new gear joins the chain.")]
+    public AudioClip meshClip;
+    [Tooltip("The whole chain meshes and the machine starts.")]
+    public AudioClip startClip;
+    [Tooltip("The cage sinking into the floor.")]
+    public AudioClip cageClip;
+    [Tooltip("A puff of steam from a vent.")]
+    public AudioClip steamClip;
+    [Range(0f, 1f)] public float steamVolume = 0.6f;
+
     [Header("Colours (used when no material is assigned)")]
     public Color floorColor = new Color(0.28f, 0.27f, 0.3f);
     public Color wallColor = new Color(0.2f, 0.2f, 0.24f);
@@ -152,6 +165,11 @@ public class GearGenerator : MonoBehaviour
         puzzle = GetComponent<GearPuzzle>();
         if (puzzle == null) puzzle = gameObject.AddComponent<GearPuzzle>();
 
+        puzzle.placeClip = placeClip;
+        puzzle.meshClip = meshClip;
+        puzzle.startClip = startClip;
+        puzzle.cageClip = cageClip;
+
         // Pick the sizes first. The machine is built around them, so it always works.
         float[] needed = PickGearSizes();
 
@@ -172,6 +190,9 @@ public class GearGenerator : MonoBehaviour
         {
             GearAtmosphere atmosphere = GetComponent<GearAtmosphere>();
             if (atmosphere == null) atmosphere = gameObject.AddComponent<GearAtmosphere>();
+
+            atmosphere.steamClip = steamClip;
+            atmosphere.steamVolume = steamVolume;
 
             atmosphere.Build(root, floorHeight, half, machineZ,
                              motor.transform.localPosition, output.transform.localPosition,

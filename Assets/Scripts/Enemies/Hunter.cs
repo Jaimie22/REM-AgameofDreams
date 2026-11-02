@@ -42,6 +42,7 @@ public class Hunter : MonoBehaviour
     [HideInInspector] public int faceIndex = 2;
 
     MazeGenerator maze;
+    HunterAudio hunterAudio;
 
     int cellX, cellY;          // the cell it's standing in
     int nextX, nextY;          // the cell it's walking towards
@@ -49,9 +50,16 @@ public class Hunter : MonoBehaviour
     bool hasHome;
     bool moving;
 
+    // The sounds the maze's theme gives it
+    public LevelTheme Theme => maze != null ? maze.theme : null;
+
     void Awake()
     {
         StopRootMotion();
+
+        // Added here so the prefab needs no setup
+        hunterAudio = GetComponent<HunterAudio>();
+        if (hunterAudio == null) hunterAudio = gameObject.AddComponent<HunterAudio>();
     }
 
     void Start()
@@ -351,6 +359,10 @@ public class Hunter : MonoBehaviour
     void Catch(CubeWorld world)
     {
         Debug.Log("It found you.");
+
+        // The lunge, then the player's own reaction
+        hunterAudio.PlayAttack();
+        world.player.Audio.PlayDeath();
 
         CubeFace cubeFace = world.faces[world.CurrentFaceIndex];
         if (cubeFace != null && cubeFace.spawnPoint != null)

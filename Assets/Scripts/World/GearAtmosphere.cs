@@ -24,6 +24,10 @@ public class GearAtmosphere : MonoBehaviour
     public Vector2 puffInterval = new Vector2(3f, 6f);
     public Color steamColor = new Color(0.9f, 0.9f, 0.85f, 0.5f);
 
+    // Set by GearGenerator
+    [HideInInspector] public AudioClip steamClip;
+    [HideInInspector] public float steamVolume = 0.6f;
+
     [Header("Chimneys")]
     public bool addChimneys = true;
     public int chimneyCount = 4;
@@ -195,6 +199,10 @@ public class GearAtmosphere : MonoBehaviour
         FadeAndSwell(ps, steamColor, 0.6f, 3f);
         SetUpRenderer(ps, steamMaterial);
         ps.Play();
+
+        // The hiss keeps time with the puff
+        if (steamClip != null)
+            obj.AddComponent<GearVent>().SetUp(steamClip, steamVolume, interval, startDelay);
     }
 
     // --- Chimneys ---------------------------------------------------

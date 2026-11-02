@@ -24,6 +24,12 @@ public class HeartbeatSystem : MonoBehaviour
     [Tooltip("Pitch of the generated thump. Lower is heavier.")]
     public float thumpFrequency = 48f;
 
+    [Header("Fading Out")]
+    [Tooltip("If nothing has raised the tension for this many seconds, the heartbeat fades away. Stops it carrying on after the hunter's level has finished.")]
+    public float quietAfter = 0.5f;
+    [Tooltip("How much faster it fades away than it reacts to a rise in tension.")]
+    public float fadeOutSpeed = 3f;
+
     [Header("Response")]
     [Tooltip("How quickly the heartbeat reacts to a change in tension.")]
     public float blendSpeed = 1.5f;
@@ -33,6 +39,7 @@ public class HeartbeatSystem : MonoBehaviour
     AudioSource source;
     float targetTension;
     float beatTimer;
+    float lastRaisedTime;
 
     private void Awake()
     {
@@ -86,6 +93,7 @@ public class HeartbeatSystem : MonoBehaviour
     public void SetTension(float value)
     {
         targetTension = Mathf.Clamp01(value);
+        lastRaisedTime = Time.time;
     }
 
     // Stops the heartbeat, for levels that shouldn't have one
@@ -97,7 +105,15 @@ public class HeartbeatSystem : MonoBehaviour
 
     private void Update()
     {
-        Tension = Mathf.Lerp(Tension, targetTension, blendSpeed * Time.deltaTime);
+        // The hunter reports in every frame while it's in play. When it goes quiet, the level
+        // has finished or the player has left it, so the heartbeat dies away.
+        bool forgotten = Time.time - lastRaisedTime > quietAfter;
+        if (forgotten) targetTension = 0f;
+
+        float speed = forgotten ? blendSpeed * fadeOutSpeed : blendSpeed;
+        Tension = Mathf.Lerp(Tension, targetTension, speed * Time.deltaTime);
+
+        if (forgotten && Tension < 0.05f) Tension = 0f;
         if (Tension < 0.01f) return;
 
         float bpm = Mathf.Lerp(restingBPM, maxBPM, Tension);

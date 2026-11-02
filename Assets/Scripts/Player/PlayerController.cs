@@ -29,6 +29,20 @@ public class PlayerController : MonoBehaviour
     public string airborneParameter = "";
     public float animationDamping = 0.1f;
 
+    // The player's footsteps, jumps and pickup sounds. Added the first time it's asked for,
+    // so the player needs no setup, even if it starts the game hidden.
+    public PlayerAudio Audio
+    {
+        get
+        {
+            if (playerAudio == null) playerAudio = GetComponent<PlayerAudio>();
+            if (playerAudio == null) playerAudio = gameObject.AddComponent<PlayerAudio>();
+            return playerAudio;
+        }
+    }
+
+    PlayerAudio playerAudio;
+
     CharacterController controller;
     float verticalVelocity;
     float lastGroundedTime;
@@ -36,6 +50,7 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         controller = GetComponent<CharacterController>();
+
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
@@ -92,6 +107,8 @@ public class PlayerController : MonoBehaviour
             // The maths that turns a height in units into an upward speed
             verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             lastGroundedTime = -999f; // stops a second jump in mid-air
+
+            Audio.PlayJump();
         }
 
         verticalVelocity += gravity * Time.deltaTime;
