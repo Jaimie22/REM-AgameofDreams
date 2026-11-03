@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 45e3cb27ee9327a4eb91420dc7b506cd
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 371052
+  packageName: Water Drop-Dynamic Rain Surfaces (URP)
+  packageVersion: 1.0
+  assetPath: Assets/Water Drop-Dynamic Rain Surfaces (URP)/Shaders/shader_env_rainyWindow.shader
+  uploadId: 893512
