@@ -37140,7 +37140,20 @@ MonoBehaviour:
   cameraView: {x: 0, y: 0, z: 1}
   creditsText: 'R.E.M
 
+
     A Game of Dreams
+
+
+
+    Module
+
+    COMP09105 : Game
+    Engine 2
+
+
+    Lecturer
+
+    Marco Gilardi
 
 
     Engine
@@ -37154,11 +37167,9 @@ MonoBehaviour:
     Peacock
 
 
-
     Story
 
     Jaimie Neilson
-
 
 
     Level Design
@@ -37169,11 +37180,9 @@ MonoBehaviour:
     Peacock
 
 
-
     UI Elements
 
     Ceana Gray
-
 
 
     Programming
@@ -37184,11 +37193,9 @@ MonoBehaviour:
     Peacock
 
 
-
     Assets
 
     With thanks to
-
 
     Gems & Crystals - Aztech Games
 
@@ -37203,13 +37210,18 @@ MonoBehaviour:
     Simple Water Shader - Ignite Coders
 
 
+    Thanks For
+    playing!
 
-    Thank you
-    for playing!'
-  creditsDuration: 24
-  creditsFontSize: 28
-  creditsColor: {r: 0.9, g: 0.95, b: 1, a: 1}
-  holdOnBlack: 3
+    REM
+
+
+    A game of Dreams...'
+  creditsFont: {fileID: 12800000, guid: cddc70f9f36e2504d9900e0757803ede, type: 3}
+  creditsDuration: 30
+  creditsFontSize: 50
+  creditsColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
+  holdOnBlack: 5
 --- !u!1 &624463162
 GameObject:
   m_ObjectHideFlags: 0
@@ -37330,6 +37342,7 @@ GameObject:
   - component: {fileID: 624916855}
   - component: {fileID: 624916858}
   - component: {fileID: 624916857}
+  - component: {fileID: 624916859}
   m_Layer: 0
   m_Name: Face_6_Bottom
   m_TagString: Untagged
@@ -37420,6 +37433,22 @@ MonoBehaviour:
   floorColor: {r: 0.22, g: 0.24, b: 0.3, a: 1}
   waterColor: {r: 0.4, g: 0.6, b: 0.75, a: 1}
   boardColor: {r: 0.5, g: 0.42, b: 0.33, a: 1}
+--- !u!114 &624916859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 624916854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54bf07a6813a7fe4ebf80061b9ea1350, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hunterPrefab: {fileID: 5921367157248738129, guid: f94c577fdd00e594abc50fdff8f3ff17, type: 3}
+  faceIndex: 5
+  distanceFromSpawn: 18
+  standHeight: 1
 --- !u!1 &631277988
 GameObject:
   m_ObjectHideFlags: 0

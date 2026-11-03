@@ -20,7 +20,6 @@ public class AwakeningSequence : MonoBehaviour
     public Vector3 cameraOffset = new Vector3(-2.5f, 0.5f, 6f);
     [Tooltip("How high up his body the camera aims.")]
     public float aimHeight = 0.6f;
-
     [Tooltip("How quickly the camera catches up as he falls. Lower = more drift.")]
     public float cameraLag = 1.5f;
 
@@ -30,19 +29,27 @@ public class AwakeningSequence : MonoBehaviour
     [Tooltip("Seconds the background takes to fade in as he falls.")]
     public float skyFadeTime = 2f;
 
-    [Tooltip("Which way the camera looks during the fall. Leave as is unless the view is wrong.")]
-    public Vector3 cameraView = Vector3.forward;
-
     [Header("Credits")]
     [TextArea(8, 20)]
     [Tooltip("One line each. Blank lines make gaps.")]
     public string creditsText =
         "R.E.M\nA Game of Dreams\n\n\nDesign\nJaimie Neilson\n\n\nProgramming\nJaimie Neilson\n\n\nThank you for playing";
 
+    [Tooltip("The credits font. Leave empty for Unity's built-in one.")]
+    public Font creditsFont;
     [Tooltip("Seconds the credits take to scroll from bottom to top.")]
     public float creditsDuration = 24f;
     public int creditsFontSize = 28;
     public Color creditsColor = new Color(0.9f, 0.95f, 1f);
+
+    [Header("Music")]
+    [Tooltip("Plays as he falls and the credits roll. Leave empty for silence.")]
+    public AudioClip creditsMusic;
+    [Range(0f, 1f)] public float musicVolume = 0.6f;
+    [Tooltip("Seconds the music takes to fade in.")]
+    public float musicFadeIn = 2f;
+    [Tooltip("Seconds it takes to fade out at the very end.")]
+    public float musicFadeOut = 3f;
 
     [Header("Ending")]
     [Tooltip("Seconds of black after the credits before anything else.")]
@@ -53,6 +60,7 @@ public class AwakeningSequence : MonoBehaviour
     RawImage sky;
     Text credits;
     Image blackout;
+    AudioSource music;
 
     bool running;
 
@@ -91,7 +99,6 @@ public class AwakeningSequence : MonoBehaviour
         {
             // Stop any movement animation, so he doesn't run while falling
             animator.SetFloat("Speed", 0f);
-            // Trigger the fall animation
             animator.SetTrigger("Fall");
         }
 
@@ -99,6 +106,7 @@ public class AwakeningSequence : MonoBehaviour
         float elapsed = 0f;
 
         StartCoroutine(FadeSky());
+        StartMusic();
 
         // Turn him to face the camera, so we see him rather than his back
         falling.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
@@ -126,17 +134,17 @@ public class AwakeningSequence : MonoBehaviour
             yield return null;
         }
 
-        // Fade to black, and hold
+        // Fade the music out alongside the picture, so they land together
+        StartCoroutine(FadeMusicOut());
+
         yield return FadeToBlack();
         yield return new WaitForSeconds(holdOnBlack);
 
         Debug.Log("He wakes.");
     }
 
-    // Sits the camera at a fixed offset from him, looking at him.
-    // Deliberately simple: nothing here can send the camera somewhere he isn't.
-    // Follows him down, but a little behind, so he drifts within the frame
-    // rather than hanging motionless against the background
+    // Sits the camera at a fixed offset from him, lagging a little as he
+    // falls so he drifts within the frame rather than hanging motionless
     void FrameFall(Camera cam)
     {
         Vector3 wanted = falling.position + cameraOffset;
@@ -150,8 +158,51 @@ public class AwakeningSequence : MonoBehaviour
         cam.transform.LookAt(falling.position + Vector3.up * aimHeight);
     }
 
+    // --- Music ------------------------------------------------------
 
-    // --- Canvas and UI -----------------------------------------------
+    void StartMusic()
+    {
+        if (creditsMusic == null) return;
+
+        music = gameObject.AddComponent<AudioSource>();
+        music.clip = creditsMusic;
+        music.loop = true;
+        music.spatialBlend = 0f;    // heard everywhere, not from a point in space
+        music.volume = 0f;
+        music.Play();
+
+        StartCoroutine(FadeMusicIn());
+    }
+
+    IEnumerator FadeMusicIn()
+    {
+        for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, musicFadeIn))
+        {
+            music.volume = Mathf.Lerp(0f, musicVolume, t);
+            yield return null;
+        }
+
+        music.volume = musicVolume;
+    }
+
+    IEnumerator FadeMusicOut()
+    {
+        if (music == null) yield break;
+
+        float from = music.volume;
+
+        for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, musicFadeOut))
+        {
+            music.volume = Mathf.Lerp(from, 0f, t);
+            yield return null;
+        }
+
+        music.volume = 0f;
+        music.Stop();
+    }
+
+    // --- Canvas and UI ----------------------------------------------
+
     void BuildCanvas()
     {
         GameObject canvasObj = new GameObject("AwakeningCanvas");
@@ -163,42 +214,8 @@ public class AwakeningSequence : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
 
-        BuildSky(canvasObj.transform);
         BuildCredits(canvasObj.transform);
         BuildBlackout(canvasObj.transform);
-    }
-
-    // A full-screen gradient, dark at the top and light below
-    void BuildSky(Transform parent)
-    {
-        GameObject obj = new GameObject("Sky");
-        obj.transform.SetParent(parent, false);
-
-        sky = obj.AddComponent<RawImage>();
-        sky.texture = BuildGradient();
-        sky.raycastTarget = false;
-        sky.color = new Color(1f, 1f, 1f, 0f);
-
-        Stretch(sky.rectTransform);
-
-        // Behind everything else on the canvas
-        obj.transform.SetAsFirstSibling();
-    }
-
-    Texture2D BuildGradient()
-    {
-        const int height = 256;
-        Texture2D tex = new Texture2D(1, height, TextureFormat.RGBA32, false);
-        tex.wrapMode = TextureWrapMode.Clamp;
-
-        for (int y = 0; y < height; y++)
-        {
-            float t = (float)y / (height - 1);
-            tex.SetPixel(0, y, Color.Lerp(skyBottom, skyTop, t));
-        }
-
-        tex.Apply();
-        return tex;
     }
 
     // The credits, scrolling up the left-hand side
@@ -209,12 +226,21 @@ public class AwakeningSequence : MonoBehaviour
 
         credits = obj.AddComponent<Text>();
         credits.text = creditsText;
-        credits.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+        // Use the chosen font, or Unity's built-in one if none is set
+        credits.font = creditsFont != null
+            ? creditsFont
+            : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
         credits.fontSize = creditsFontSize;
         credits.color = new Color(creditsColor.r, creditsColor.g, creditsColor.b, 0f);
         credits.alignment = TextAnchor.UpperLeft;
         credits.lineSpacing = 1.4f;
         credits.raycastTarget = false;
+
+        // Let long credits run past the box rather than being cut off
+        credits.horizontalOverflow = HorizontalWrapMode.Wrap;
+        credits.verticalOverflow = VerticalWrapMode.Overflow;
 
         // Down the left third of the screen
         RectTransform rect = credits.rectTransform;
@@ -248,8 +274,9 @@ public class AwakeningSequence : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
+    // --- Timed pieces -----------------------------------------------
 
-    // Fades the camera's own background to the dream gradient, so he
+    // Fades the camera's own background to the dream colour, so he
     // falls in front of it rather than behind it
     IEnumerator FadeSky()
     {
@@ -259,9 +286,6 @@ public class AwakeningSequence : MonoBehaviour
         cam.clearFlags = CameraClearFlags.SolidColor;
         Color from = cam.backgroundColor;
 
-        // The sky is the camera's clear colour, so the gradient has to be
-        // a single blend. The lower half of the screen reads lighter anyway
-        // because of the fog, so this still gives the impression of depth.
         for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, skyFadeTime))
         {
             cam.backgroundColor = Color.Lerp(from, skyBottom, Mathf.SmoothStep(0f, 1f, t));
@@ -272,13 +296,12 @@ public class AwakeningSequence : MonoBehaviour
     }
 
     // Scrolls the credits up the left-hand side, fading them in as they rise
-    //This allows the credits to fade in as they rise, creating a more cinematic effect.
     IEnumerator RollCredits()
     {
         RectTransform rect = credits.rectTransform;
 
         float from = -1200f;
-        float to = 2400f;
+        float to = 3600f;
         float fadeIn = 2.5f;
 
         // Fade and climb together, so the words drift into view
@@ -296,7 +319,6 @@ public class AwakeningSequence : MonoBehaviour
     }
 
     // Fades the screen to black, so he wakes in darkness
-    //This creates a smooth transition to black, enhancing the dramatic effect of the awakening sequence.
     IEnumerator FadeToBlack()
     {
         for (float t = 0f; t < 1f; t += Time.deltaTime / 2f)
