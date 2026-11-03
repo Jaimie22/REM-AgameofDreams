@@ -8356,7 +8356,7 @@ MonoBehaviour:
   fogPuffs: 45
   fogColor: {r: 0.05, g: 0.04, b: 0.09, a: 1}
   fogClearTime: 1.8
-  cameraStyle: 0
+  cameraStyle: 1
   tintFloors: 0
   faceColor: {r: 1, g: 1, b: 1, a: 1}
   colorRenderers: []
