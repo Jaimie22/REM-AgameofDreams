@@ -12,14 +12,14 @@ public class Hunter : MonoBehaviour
     public float wanderSpeed = 1.2f;
     public float trackSpeed = 1.8f;
     [Tooltip("Speed once it can see him. Keep it below the player's 5.")]
-    public float chaseSpeed = 2.5f;
+    public float chaseSpeed = 1.6f;
     public float turnSpeed = 5f;
 
     [Header("Senses")]
     [Tooltip("How far it can smell the trail, in units.")]
-    public float scentRange = 14f;
+    public float scentRange = 5f;
     [Tooltip("How far it can see him down a clear corridor.")]
-    public float sightRange = 7f;
+    public float sightRange = 5f;
     [Tooltip("How close it has to be to catch him.")]
     public float catchRange = 1.3f;
 
@@ -35,6 +35,22 @@ public class Hunter : MonoBehaviour
     [Range(0f, 1f)] public float wanderingTension = 0.15f;
     [Range(0f, 1f)] public float trackingTension = 0.4f;
     [Range(0f, 1f)] public float chasingTension = 0.85f;
+
+    [Header("Memory")]
+    [Tooltip("Seconds it keeps heading for where it last saw him.")]
+    public float giveUpTime = 3f;
+
+    [Header("Stamina")]
+    [Tooltip("Seconds of chasing before it slows, giving the player a chance.")]
+    public float chaseStamina = 8f;
+    [Tooltip("How much it slows once winded.")]
+    [Range(0.3f, 1f)] public float tiredSpeedScale = 0.6f;
+
+    float chaseTimer;
+
+    Vector3 lastKnown;
+    bool hasLastKnown;
+    float lostTimer;
 
     public State CurrentState { get; private set; } = State.Wandering;
 
@@ -110,6 +126,10 @@ public class Hunter : MonoBehaviour
             return;
         }
 
+        // Chasing is exhausting: it can't keep top speed forever
+        if (CurrentState == State.Chasing) chaseTimer += Time.deltaTime;
+        else chaseTimer = Mathf.Max(0f, chaseTimer - Time.deltaTime * 0.5f);
+
         if (!moving) ChooseNextCell(player);
 
         StepTowardsNextCell();
@@ -154,9 +174,32 @@ public class Hunter : MonoBehaviour
         if (CanSeePlayer(player))
         {
             CurrentState = State.Chasing;
-            Vector2Int towards = BestTowards(options, player.position);
-            SetNext(towards);
+            lastKnown = player.position;
+            hasLastKnown = true;
+            lostTimer = 0f;
+
+            SetNext(BestTowards(options, player.position));
             return;
+        }
+
+        // Just lost sight of him, so head for where he was last seen
+        if (hasLastKnown)
+        {
+            lostTimer += Time.deltaTime;
+
+            if (lostTimer < giveUpTime)
+            {
+                CurrentState = State.Tracking;
+                SetNext(BestTowards(options, lastKnown));
+
+                // Arrived and he's not here, so stop chasing a memory
+                if (Vector3.Distance(transform.position, lastKnown) < 2f)
+                    hasLastKnown = false;
+
+                return;
+            }
+
+            hasLastKnown = false;
         }
 
         // Follow the freshest scent it can smell
@@ -254,6 +297,9 @@ public class Hunter : MonoBehaviour
             State.Tracking => trackSpeed,
             _ => wanderSpeed
         };
+
+        // Winded after a long chase, so a determined runner can shake it off
+        if (chaseTimer > chaseStamina) speed *= tiredSpeedScale;
 
         transform.position = Vector3.MoveTowards(transform.position, destination,
                                                  speed * Time.deltaTime);

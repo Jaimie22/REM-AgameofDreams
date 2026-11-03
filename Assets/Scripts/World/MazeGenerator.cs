@@ -499,14 +499,15 @@ public class MazeGenerator : MonoBehaviour
         Vector3 altarPos = CellCenter(ax, ay, baseHeight);
         DreamAltar altar = BuildAltar(altarPos);
 
-        // The door of light sits in the gap in the far wall
+        // The door of light sits in the gap in the far wall, pulled in
+        // slightly so it reads as a doorway rather than part of the wall
         Vector3 doorPos = new Vector3(
             SlotCenter(exitCellX * 2 + 1),
             baseHeight + wallHeight * 0.45f,
-            SlotCenter(gridH - 1));
+            SlotCenter(gridH - 1) - wallThickness * 0.5f);
 
         GameObject door = MakeCube("DreamDoor", doorPos,
-            new Vector3(corridor * 0.9f, wallHeight * 0.9f, wallThickness * 1.5f),
+            new Vector3(corridor * 0.9f, wallHeight * 0.9f, wallThickness * 1.2f),
             theme.doorMaterial);
 
         door.GetComponent<Collider>().isTrigger = true;
@@ -671,4 +672,4 @@ public class MazeGenerator : MonoBehaviour
         if (face != null && face.levelContent != null) return face.levelContent.transform;
         return transform.Find("LevelContent");
     }
-}
+}

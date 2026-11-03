@@ -144,6 +144,9 @@ public class CubeWorld : MonoBehaviour
         GearGenerator gears = faces[index].GetComponent<GearGenerator>();
         if (gears != null) gears.Generate(faceSeeds[index]);
 
+        AwakeningGenerator awakening = faces[index].GetComponent<AwakeningGenerator>();
+        if (awakening != null) awakening.Generate(faceSeeds[index]);
+
         Physics.SyncTransforms(); // make sure the new colliders are in place
     }
 
@@ -163,6 +166,9 @@ public class CubeWorld : MonoBehaviour
 
         GearGenerator gears = faces[index].GetComponent<GearGenerator>();
         if (gears != null && gears.theme != null) levelTheme = gears.theme;
+
+        AwakeningGenerator awakening = faces[index].GetComponent<AwakeningGenerator>();
+        if (awakening != null && awakening.theme != null) levelTheme = awakening.theme;
 
         // The footsteps and other sounds follow the level's surface
         player.Audio.SetSurface(levelTheme);
@@ -229,9 +235,13 @@ public class CubeWorld : MonoBehaviour
                 // The scroll wheel zooms the camera while playing (see DreamCamera).
                 // To reach the cube, press M for the map, then scroll down.
 
-                // Respawn if the player falls off the level
+                // Respawn if the player falls off the level.
+                // Not on the final face, where falling off the edge is the ending.
                 CubeFace face = faces[CurrentFaceIndex];
-                if (player.transform.position.y < face.transform.position.y - fallResetDistance)
+                bool isEnding = face.GetComponent<AwakeningGenerator>() != null;
+
+                if (!isEnding &&
+                    player.transform.position.y < face.transform.position.y - fallResetDistance)
                     player.Spawn(face.spawnPoint);
                 break;
 
@@ -560,4 +570,4 @@ public class CubeWorld : MonoBehaviour
 
         GoToCubeView();
     }
-}
+}

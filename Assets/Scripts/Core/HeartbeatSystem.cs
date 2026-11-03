@@ -16,13 +16,13 @@ public class HeartbeatSystem : MonoBehaviour
     [Header("Volume")]
     [Tooltip("How loud the heartbeat is when calm. 0 means silent until tension rises.")]
     [Range(0f, 1f)] public float restingVolume = 0.15f;
-    [Range(0f, 1f)] public float maxVolume = 0.7f;
+    [Range(0f, 1f)] public float maxVolume = 1f;
 
     [Header("Sound")]
     [Tooltip("Optional. Leave empty and a heartbeat is generated in code.")]
     public AudioClip heartbeatClip;
     [Tooltip("Pitch of the generated thump. Lower is heavier.")]
-    public float thumpFrequency = 48f;
+    public float thumpFrequency = 55f;
 
     [Header("Fading Out")]
     [Tooltip("If nothing has raised the tension for this many seconds, the heartbeat fades away. Stops it carrying on after the hunter's level has finished.")]
@@ -34,7 +34,7 @@ public class HeartbeatSystem : MonoBehaviour
     [Tooltip("How quickly the heartbeat reacts to a change in tension.")]
     public float blendSpeed = 1.5f;
 
-    public float Tension { get; private set; }   // smoothed, 0 to 1
+    public float Tension { get; private set; }
 
     AudioSource source;
     float targetTension;

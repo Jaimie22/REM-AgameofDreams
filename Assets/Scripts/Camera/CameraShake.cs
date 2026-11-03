@@ -8,9 +8,9 @@ public class CameraShake : MonoBehaviour
 {
     [Header("Tension Shake")]
     [Tooltip("How far the camera drifts at full tension, in units.")]
-    public float maxShake = 0.12f;
+    public float maxShake = 0.04f;
     [Tooltip("How fast the drift moves. Slow feels queasy, fast feels violent.")]
-    public float shakeSpeed = 2f;
+    public float shakeSpeed = 1f;
     [Tooltip("Tension below this causes no shake at all.")]
     [Range(0f, 1f)] public float threshold = 0.4f;
 
@@ -26,14 +26,14 @@ public class CameraShake : MonoBehaviour
 
     [Header("Settling")]
     [Tooltip("How quickly the shake eases in and out. Lower = smoother, never abrupt.")]
-    public float settleSpeed = 2f;
+    public float settleSpeed = 1f;
     [Tooltip("Below this the camera is forced perfectly still, so it always fully stops.")]
     public float stillThreshold = 0.01f;
 
     float seedX, seedY;
     float beatPulse;
     float lastPhase;
-    float currentAmount;   // smoothed, so the shake never snaps on or off
+    float currentAmount;   
 
     private void Start()
     {
