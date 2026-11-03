@@ -410,6 +410,9 @@ public class Hunter : MonoBehaviour
         hunterAudio.PlayAttack();
         world.player.Audio.PlayDeath();
 
+        // It costs the player a heart
+        world.player.Vitals.TakeDamage();
+
         CubeFace cubeFace = world.faces[world.CurrentFaceIndex];
         if (cubeFace != null && cubeFace.spawnPoint != null)
             world.player.Spawn(cubeFace.spawnPoint);

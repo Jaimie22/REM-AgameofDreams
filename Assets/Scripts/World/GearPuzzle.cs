@@ -41,6 +41,10 @@ public class GearPuzzle : MonoBehaviour
 
     public bool Solved { get; private set; }
 
+    // For the objective UI: how many gears are joined up, and how many pegs there are
+    public int LinkedCount => linkedCount;
+    public int PegCount => pegs.Count;
+
     GearPiece motor;
     GearPiece output;
     List<GearPeg> pegs = new List<GearPeg>();

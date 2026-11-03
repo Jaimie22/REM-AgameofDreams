@@ -10,6 +10,12 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float turnSpeed = 12f;
 
+    [Header("Sprinting")]
+    [Tooltip("Hold Left Shift to run. Costs energy, which comes back when you ease off.")]
+    public float sprintMultiplier = 1.6f;
+    [Tooltip("How much faster the walk animation plays while sprinting.")]
+    public float sprintAnimationSpeed = 1.3f;
+
     [Header("Gravity & Jumping")]
     [Tooltip("Default gravity. Levels can override this.")]
     public float gravity = -20f;
@@ -42,6 +48,19 @@ public class PlayerController : MonoBehaviour
     }
 
     PlayerAudio playerAudio;
+
+    // The player's health and energy. Added the first time it's asked for, like the audio.
+    public PlayerVitals Vitals
+    {
+        get
+        {
+            if (playerVitals == null) playerVitals = GetComponent<PlayerVitals>();
+            if (playerVitals == null) playerVitals = gameObject.AddComponent<PlayerVitals>();
+            return playerVitals;
+        }
+    }
+
+    PlayerVitals playerVitals;
 
     CharacterController controller;
     float verticalVelocity;
@@ -113,13 +132,19 @@ public class PlayerController : MonoBehaviour
 
         verticalVelocity += gravity * Time.deltaTime;
 
-        Vector3 velocity = move * moveSpeed + Vector3.up * verticalVelocity;
+        // Sprinting uses up energy, and only counts while actually moving
+        bool wantsSprint = SprintHeld() && move.sqrMagnitude > 0.01f;
+        bool sprinting = Vitals.UpdateSprint(wantsSprint, Time.deltaTime);
+        float speed = sprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+
+        Vector3 velocity = move * speed + Vector3.up * verticalVelocity;
         controller.Move(velocity * Time.deltaTime);
 
         // Feed the Animator
         if (animator != null)
         {
             animator.SetFloat(speedParameter, move.magnitude, animationDamping, Time.deltaTime);
+            animator.speed = sprinting ? sprintAnimationSpeed : 1f;
             if (!string.IsNullOrEmpty(airborneParameter))
             {
                 animator.SetBool(airborneParameter, !grounded);
@@ -153,6 +178,12 @@ public class PlayerController : MonoBehaviour
             v.x -= 1f;
         }
         return v;
+    }
+
+    bool SprintHeld()
+    {
+        Keyboard kb = Keyboard.current;
+        return kb != null && kb.leftShiftKey.isPressed;
     }
 
     bool JumpPressed()

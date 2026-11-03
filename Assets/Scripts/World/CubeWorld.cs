@@ -20,6 +20,7 @@ public class CubeWorld : MonoBehaviour
     public ScreenFader screenFader;
     [Tooltip("Optional. Leave empty and one is created automatically.")]
     public DetectionIndicator detectionIndicator;
+    public VitalsUI vitalsUI;
     [Tooltip("Optional. Handles fog and lighting changes between faces.")]
     public MoodController moodController;
 
@@ -87,6 +88,20 @@ public class CubeWorld : MonoBehaviour
     void Awake()
     {
         Instance = this;
+
+        if (player == null)
+        {
+            Debug.LogError("CubeWorld: the Player slot is empty. Drag in the player from the scene, or your player prefab.");
+            return;
+        }
+
+        // A prefab is only a file on disk, so it can't be played with. Make a copy in the scene.
+        if (!player.gameObject.scene.IsValid())
+            player = Instantiate(player);
+
+        // A prefab can't point at the scene's camera, so give the copy the camera it needs
+        if (player.cameraTransform == null && dreamCamera != null)
+            player.cameraTransform = dreamCamera.transform;
     }
 
     void Start()
@@ -98,6 +113,12 @@ public class CubeWorld : MonoBehaviour
         // The green / amber / red light showing how aware the hunter is, also created automatically
         if (detectionIndicator == null)
             detectionIndicator = gameObject.AddComponent<DetectionIndicator>();
+
+        // Hearts, energy and the objective, also created automatically
+        if (vitalsUI == null)
+            vitalsUI = GetComponent<VitalsUI>();
+        if (vitalsUI == null)
+            vitalsUI = gameObject.AddComponent<VitalsUI>();
 
         // The music for the cube view, silent until it's wanted
         if (cubeViewMusic != null)
@@ -387,6 +408,9 @@ public class CubeWorld : MonoBehaviour
         ApplyLevelRules(index);
         ApplyObjectives(index);
 
+        // A new level starts with full hearts and full energy
+        player.Vitals.RestoreAll();
+
         player.Spawn(face.spawnPoint);
         ApplyCameraStyle(index);
         dreamCamera.SetPlaying(player.transform);
@@ -544,6 +568,9 @@ public class CubeWorld : MonoBehaviour
 
         ApplyLevelRules(index);
         ApplyObjectives(index);
+
+        // A new level starts with full hearts and full energy
+        player.Vitals.RestoreAll();
 
         player.Spawn(face.spawnPoint);
         ApplyCameraStyle(index);

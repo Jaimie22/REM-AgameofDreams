@@ -61,6 +61,10 @@ public class DigPuzzle : MonoBehaviour
 
     public int DugCount { get; private set; }
 
+    // For the objective UI
+    public bool Flowing => flowing;
+    public bool Finished => finished;
+
     // Called by the generator once the terrain is built
     public void SetUp(DigCell[,] grid, int width, int height, int shoreRowIndex,
                       DigCell vatSquare, WaterVat levelVat, GameObject levelDoor,
