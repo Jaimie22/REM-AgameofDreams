@@ -34,6 +34,10 @@ public class AwakeningGenerator : MonoBehaviour
     [Tooltip("Optional. A model to use instead of a plain plank.")]
     public GameObject boardPrefab;
 
+    [Header("Start")]
+    [Tooltip("How far back from the centre he starts, as a fraction of the pool. 0.4 is the far end, 0 is the middle.")]
+    [Range(0f, 0.45f)] public float startDepth = 0.15f;
+
     [Header("Materials")]
     public Material floorMaterial;
     public Material waterMaterial;
@@ -43,6 +47,9 @@ public class AwakeningGenerator : MonoBehaviour
     public Color floorColor = new Color(0.22f, 0.24f, 0.3f);
     public Color waterColor = new Color(0.4f, 0.6f, 0.75f);
     public Color boardColor = new Color(0.5f, 0.42f, 0.33f);
+
+    // How far out the tip of the board is, along the face
+    public float PlankEndZ => (faceSize - edgeMargin * 2f) * 0.5f + boardOverhang;
 
     const string GeneratedName = "Generated";
 
@@ -88,6 +95,10 @@ public class AwakeningGenerator : MonoBehaviour
         BuildPool(usable);
         BuildBoard(usable);
         PlaceSpawn(usable);
+
+        // The "RUN!" and "JUMP!" prompt, and no sprinting on this level
+        if (Application.isPlaying && GetComponent<RunPrompt>() == null)
+            gameObject.AddComponent<RunPrompt>();
     }
 
     // A shallow sheet of water over a flat floor
@@ -149,7 +160,7 @@ public class AwakeningGenerator : MonoBehaviour
 
         // At the far end, so the board is a walk away across the water
         face.spawnPoint.localPosition =
-            new Vector3(0f, baseHeight + 0.3f, -usable * 0.4f);
+            new Vector3(0f, baseHeight + 0.3f, -usable * startDepth);
         face.spawnPoint.localRotation = Quaternion.identity;
     }
 

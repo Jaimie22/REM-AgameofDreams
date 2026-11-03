@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 // Puts hunters onto an open face, spread around the edges so the player
@@ -22,14 +23,39 @@ public class OpenHunterSpawner : MonoBehaviour
     public float clearOfSpawn = 12f;
     public float standHeight = 1.2f;
 
+    [Header("Where They Can Go")]
+    [Tooltip("How far from the centre they can go in the water. Just inside the edge of the pool.")]
+    public float waterLimit = 14f;
+    [Tooltip("How far out along the plank they can walk, past the water's edge. About half the board's length out.")]
+    public float plankReach = 3f;
+    public float plankHalfWidth = 0.8f;
+    [Tooltip("How much higher the plank is than the water floor (board height plus half its thickness).")]
+    public float plankRise = 0.7f;
+
+    [Header("Chase")]
+    [Tooltip("Start in a pack just behind the player, already after him. Off puts them on a ring instead.")]
+    public bool startBehindPlayer = true;
+    [Tooltip("How far behind the player's start the pack begins.")]
+    public float behindDistance = 5f;
+    [Tooltip("How far apart they stand side to side.")]
+    public float behindSpread = 2.2f;
+    [Tooltip("Their running speed as a fraction of the player's walking speed. Below 1 they can't catch him from behind, because he can't sprint here.")]
+    [Range(0.3f, 0.95f)] public float chaseSpeedOfPlayer = 0.7f;
+    public float wanderSpeed = 1f;
+    [Tooltip("How far away they notice him. Large, so the chase is on from the start.")]
+    public float sightRange = 60f;
+
     [Header("Difficulty")]
     [Tooltip("Each one is a little faster than the last, so they don't move as a block.")]
     public float speedVariation = 0.3f;
 
     const string HunterName = "OpenHunter";
 
-    void Start()
+    IEnumerator Start()
     {
+        // Wait for the face to be built, so the player's start spot is where it's going to be
+        yield return null;
+        yield return null;
         SpawnHunters();
     }
 
@@ -46,6 +72,23 @@ public class OpenHunterSpawner : MonoBehaviour
         Vector3 spawn = face.spawnPoint != null
             ? face.spawnPoint.localPosition
             : Vector3.zero;
+
+        if (startBehindPlayer)
+        {
+            for (int i = 0; i < hunterCount; i++)
+            {
+                float side = (i - (hunterCount - 1) * 0.5f) * behindSpread;
+                float back = behindDistance + (i % 2) * 1.5f + Random.Range(0f, 0.6f);
+
+                Vector3 packSpot = new Vector3(
+                    Mathf.Clamp(spawn.x + side, -waterLimit, waterLimit),
+                    standHeight,
+                    Mathf.Clamp(spawn.z - back, -waterLimit, waterLimit));
+
+                BuildHunter(parent, packSpot, i);
+            }
+            return;
+        }
 
         int placed = 0;
         int attempts = 0;
@@ -95,11 +138,18 @@ public class OpenHunterSpawner : MonoBehaviour
         brain.face = transform;
         brain.faceIndex = faceIndex;
         brain.standHeight = standHeight;
+        brain.faceLimit = waterLimit;
+        brain.plankReach = plankReach;
+        brain.plankHalfWidth = plankHalfWidth;
+        brain.plankRise = plankRise;
 
         // A little variety, so they don't advance in lockstep
         float variation = 1f + Random.Range(-speedVariation, speedVariation);
-        brain.chaseSpeed *= variation;
-        brain.wanderSpeed *= variation;
+        float playerSpeed = CubeWorld.Instance != null && CubeWorld.Instance.player != null
+            ? CubeWorld.Instance.player.moveSpeed : 5f;
+        brain.chaseSpeed = Mathf.Min(playerSpeed * chaseSpeedOfPlayer * variation, playerSpeed * 0.92f);
+        brain.wanderSpeed = wanderSpeed * variation;
+        brain.sightRange = sightRange;
     }
 
     void ClearHunters(Transform parent)

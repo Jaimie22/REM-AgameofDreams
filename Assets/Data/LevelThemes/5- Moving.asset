@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b34de1fe53b8c949b88e7cc92ebf4d4, type: 3}
+  m_Name: 5- Moving
+  m_EditorClassIdentifier: 
+  levelName: Light Sleep
+  designNotes: Moving world
+  cellSize: 5
+  coverage: 0.9
+  minRouteCells: 8
+  maxBranchLength: 3
+  roomChance: 0.15
+  stepHeight: 0.3
+  maxHeightDrift: 2
+  wallChance: 0.25
+  wallHeight: 3
+  wallGap: 2.5
+  pillarsPerCell: {x: 0, y: 1}
+  pillarSize: 1.2
+  gapChance: 0.15
+  gapSize: {x: 1.5, y: 2.5}
+  gravity: -16
+  jumpHeight: 2
+  collectibles: 3
+  floorMaterial: {fileID: 0}
+  wallMaterial: {fileID: 0}
+  doorMaterial: {fileID: 0}
+  collectibleMaterial: {fileID: 0}
+  footstepClips:
+  - {fileID: 8300000, guid: baaf211dc78fc3d4c95c5de4fa7ca312, type: 3}
+  - {fileID: 8300000, guid: eb89834ab1c75184f9bc00d400e8ff97, type: 3}
+  - {fileID: 8300000, guid: 31fddd741ffd75c40abeb441a3033a3f, type: 3}
+  - {fileID: 8300000, guid: 6b14459d3819ea64b96aa81975124a77, type: 3}
+  - {fileID: 8300000, guid: 6e257c6367e7e6542ac341d7aebc0635, type: 3}
+  footstepVolume: 1
+  jumpClip: {fileID: 8300000, guid: 7682ee7b3d68c7047843e037d9655e5b, type: 3}
+  pickupClip: {fileID: 8300000, guid: 5b921bacd8ede2d4fa2ba495b92f0329, type: 3}
+  doorClip: {fileID: 8300000, guid: fa2f6406fe373464188d1b257c095f7e, type: 3}
+  ambientClip: {fileID: 8300000, guid: f6016d4cde5c4c943b31bd97afd2f697, type: 3}
+  ambientVolume: 0.5
+  digClips: []
+  waterFlowClip: {fileID: 0}
+  waterFlowVolume: 0.467
+  crawlClips:
+  - {fileID: 8300000, guid: 88139011e2b5cc048b42586dca5efade, type: 3}
+  - {fileID: 8300000, guid: 6bdfeda18e6d1b24aa7f49ccf1b5439f, type: 3}
+  - {fileID: 8300000, guid: 3642098d434924546951bc01749810df, type: 3}
+  - {fileID: 8300000, guid: 3853bbbbd184e8340baf49f9157b7dce, type: 3}
+  crawlVolume: 1
+  attackClip: {fileID: 0}
+  deathClip: {fileID: 0}

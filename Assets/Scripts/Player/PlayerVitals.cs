@@ -31,6 +31,9 @@ public class PlayerVitals : MonoBehaviour
     public bool Exhausted { get; private set; }
     public bool Sprinting { get; private set; }
 
+    // A level can switch running off altogether (the final chase). The energy bar hides while it's locked.
+    public bool SprintLocked { get; set; }
+
     // For the UI, so it can flash when the player is hurt
     public float LastHurtTime { get; private set; } = -999f;
 
@@ -54,7 +57,7 @@ public class PlayerVitals : MonoBehaviour
     // Called by the player every frame. Returns true if the player is really sprinting.
     public bool UpdateSprint(bool wantsSprint, float deltaTime)
     {
-        bool sprinting = wantsSprint && !Exhausted && Energy > 0f;
+        bool sprinting = wantsSprint && !SprintLocked && !Exhausted && Energy > 0f;
 
         if (sprinting)
         {

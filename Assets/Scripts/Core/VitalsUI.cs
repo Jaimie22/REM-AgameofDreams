@@ -47,6 +47,7 @@ public class VitalsUI : MonoBehaviour
 
     // Energy
     Image energyFill;
+    GameObject energyIcon, energyBack;
     float shownEnergy = 1f;
 
     // Objective
@@ -142,6 +143,12 @@ public class VitalsUI : MonoBehaviour
 
     void UpdateEnergy()
     {
+        // No running on this level, so no energy bar either
+        bool showEnergy = !vitals.SprintLocked;
+        if (energyIcon != null && energyIcon.activeSelf != showEnergy) energyIcon.SetActive(showEnergy);
+        if (energyBack != null && energyBack.activeSelf != showEnergy) energyBack.SetActive(showEnergy);
+        if (!showEnergy) return;
+
         shownEnergy = Mathf.Lerp(shownEnergy, vitals.EnergyFraction, barSpeed * Time.unscaledDeltaTime);
         energyFill.fillAmount = shownEnergy;
 
@@ -387,6 +394,7 @@ public class VitalsUI : MonoBehaviour
         boltRect.anchoredPosition = new Vector2(margin + boltWidth * 0.5f, -rowCentre);
         bolt.color = boltArt != null ? Color.white : new Color(0.78f, 0.55f, 1f);
         AddShadow(bolt.gameObject, 0.35f);
+        energyIcon = bolt.gameObject;
 
         float barLeft = margin + boltWidth + 8f;
 
@@ -404,6 +412,7 @@ public class VitalsUI : MonoBehaviour
         backRect.anchoredPosition = new Vector2(barLeft, -rowCentre);
         back.color = barBackArt != null ? Color.white : energyEmptyColor;
         AddShadow(back.gameObject, 0.3f);
+        energyBack = back.gameObject;
 
         // The blue to purple energy, which is cropped from the right as it drains
         energyFill = MakeImage("EnergyFill", backRect, barFillArt != null ? barFillArt : MakeBar(true));

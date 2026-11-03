@@ -48,6 +48,10 @@ public class Hunter : MonoBehaviour
 
     float chaseTimer;
 
+    // The last few cells it walked through, so wandering doesn't circle the same spot
+    readonly List<Vector2Int> recent = new List<Vector2Int>();
+    const int RecentMemory = 5;
+
     Vector3 lastKnown;
     bool hasLastKnown;
     float lostTimer;
@@ -216,13 +220,14 @@ public class Hunter : MonoBehaviour
             }
         }
 
-        // Nothing to follow, so amble, preferring not to double straight back
+        // Nothing to follow, so amble. It prefers cells it hasn't just been through,
+        // so it explores the maze rather than pacing one corridor
         CurrentState = State.Wandering;
 
         if (options.Count > 1)
         {
-            Vector2Int back = new Vector2Int(cellX - (nextX - cellX), cellY - (nextY - cellY));
-            options.RemoveAll(o => o.x == back.x && o.y == back.y);
+            List<Vector2Int> fresh = options.FindAll(o => !recent.Contains(o));
+            if (fresh.Count > 0) options = fresh;
         }
 
         SetNext(options[Random.Range(0, options.Count)]);
@@ -249,7 +254,88 @@ public class Hunter : MonoBehaviour
     }
 
     // Whichever open neighbour gets it closest to a spot
+    // Follows the real corridors (shortest route), so dead ends and walls don't trap it
     Vector2Int BestTowards(List<Vector2Int> options, Vector3 worldTarget)
+    {
+        if (TargetCell(worldTarget, out int goalX, out int goalY)
+            && FirstStepTo(goalX, goalY, out Vector2Int step)
+            && options.Contains(step))
+            return step;
+
+        return GreedyTowards(options, worldTarget);
+    }
+
+    // The cell a world position belongs to, or the nearest one if it's inside a wall
+    bool TargetCell(Vector3 worldTarget, out int gx, out int gy)
+    {
+        Vector3 local = face.InverseTransformPoint(worldTarget);
+        if (maze.PositionToCell(local, out gx, out gy)) return true;
+
+        float best = float.MaxValue;
+        gx = cellX;
+        gy = cellY;
+
+        for (int x = 0; x < maze.CellsWide; x++)
+            for (int y = 0; y < maze.CellsDeep; y++)
+            {
+                float d = (CellWorld(x, y) - worldTarget).sqrMagnitude;
+                if (d < best) { best = d; gx = x; gy = y; }
+            }
+
+        return best < float.MaxValue;
+    }
+
+    // Breadth-first search through the open corridors. Gives the first cell to step into
+    bool FirstStepTo(int goalX, int goalY, out Vector2Int step)
+    {
+        step = new Vector2Int(cellX, cellY);
+        if (goalX == cellX && goalY == cellY) return false;
+
+        int w = maze.CellsWide, d = maze.CellsDeep;
+        int[] from = new int[w * d];
+        for (int i = 0; i < from.Length; i++) from[i] = -2;
+
+        int start = cellY * w + cellX;
+        int goal = goalY * w + goalX;
+        from[start] = -1;
+
+        Queue<int> queue = new Queue<int>();
+        queue.Enqueue(start);
+
+        int[] dx = { 1, -1, 0, 0 };
+        int[] dy = { 0, 0, 1, -1 };
+
+        while (queue.Count > 0 && from[goal] == -2)
+        {
+            int current = queue.Dequeue();
+            int cx = current % w, cy = current / w;
+
+            for (int k = 0; k < 4; k++)
+            {
+                int nx = cx + dx[k], ny = cy + dy[k];
+                if (nx < 0 || ny < 0 || nx >= w || ny >= d) continue;
+
+                int n = ny * w + nx;
+                if (from[n] != -2) continue;
+                if (!maze.IsOpenBetween(cx, cy, nx, ny)) continue;
+
+                from[n] = current;
+                queue.Enqueue(n);
+            }
+        }
+
+        if (from[goal] == -2) return false; // no route
+
+        // Walk back from the goal to the cell right after the start
+        int node = goal;
+        while (from[node] != start) node = from[node];
+
+        step = new Vector2Int(node % w, node / w);
+        return true;
+    }
+
+    // Fallback: whichever open neighbour is nearest as the crow flies
+    Vector2Int GreedyTowards(List<Vector2Int> options, Vector3 worldTarget)
     {
         Vector2Int best = options[0];
         float bestDistance = float.MaxValue;
@@ -285,6 +371,11 @@ public class Hunter : MonoBehaviour
         {
             // Arrived, so this is now its cell
             transform.position = destination;
+
+            Vector2Int left = new Vector2Int(cellX, cellY);
+            if (recent.Count >= RecentMemory) recent.RemoveAt(0);
+            recent.Add(left);
+
             cellX = nextX;
             cellY = nextY;
             moving = false;
@@ -346,6 +437,7 @@ public class Hunter : MonoBehaviour
 
         transform.position = CellWorld(homeX, homeY);
         CurrentState = State.Wandering;
+        recent.Clear();
     }
 
     // The world position of a cell, standing on its floor

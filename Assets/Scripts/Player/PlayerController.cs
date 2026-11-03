@@ -137,8 +137,11 @@ public class PlayerController : MonoBehaviour
         bool sprinting = Vitals.UpdateSprint(wantsSprint, Time.deltaTime);
         float speed = sprinting ? moveSpeed * sprintMultiplier : moveSpeed;
 
+        // A moving platform carries whoever is standing on it
+        Vector3 carry = PlatformCarry();
+
         Vector3 velocity = move * speed + Vector3.up * verticalVelocity;
-        controller.Move(velocity * Time.deltaTime);
+        controller.Move(velocity * Time.deltaTime + carry);
 
         // Feed the Animator
         if (animator != null)
@@ -178,6 +181,28 @@ public class PlayerController : MonoBehaviour
             v.x -= 1f;
         }
         return v;
+    }
+
+    // How far the platform underfoot moved this frame, if it's a moving one
+    Vector3 PlatformCarry()
+    {
+        // Look straight down from the middle of the body, a little past the feet
+        Vector3 centre = controller.bounds.center;
+        float reach = controller.bounds.extents.y + 0.4f;
+
+        if (!Physics.Raycast(centre, Vector3.down, out RaycastHit hit, reach, ~0, QueryTriggerInteraction.Ignore))
+            return Vector3.zero;
+
+        MovingPlatform platform = hit.collider.GetComponentInParent<MovingPlatform>();
+        if (platform == null) return Vector3.zero;
+
+        float yaw;
+        Vector3 carry = platform.CarryDelta(transform.position, out yaw);
+
+        // A turning platform turns the player with it
+        transform.Rotate(0f, yaw, 0f, Space.World);
+
+        return carry;
     }
 
     bool SprintHeld()

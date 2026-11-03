@@ -168,6 +168,9 @@ public class CubeWorld : MonoBehaviour
         AwakeningGenerator awakening = faces[index].GetComponent<AwakeningGenerator>();
         if (awakening != null) awakening.Generate(faceSeeds[index]);
 
+        PlatformGenerator platforms = faces[index].GetComponent<PlatformGenerator>();
+        if (platforms != null) platforms.Generate(faceSeeds[index]);
+
         Physics.SyncTransforms(); // make sure the new colliders are in place
     }
 
@@ -190,6 +193,9 @@ public class CubeWorld : MonoBehaviour
 
         AwakeningGenerator awakening = faces[index].GetComponent<AwakeningGenerator>();
         if (awakening != null && awakening.theme != null) levelTheme = awakening.theme;
+
+        PlatformGenerator platforms = faces[index].GetComponent<PlatformGenerator>();
+        if (platforms != null && platforms.theme != null) levelTheme = platforms.theme;
 
         // The footsteps and other sounds follow the level's surface
         player.Audio.SetSurface(levelTheme);

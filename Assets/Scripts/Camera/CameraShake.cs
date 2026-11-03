@@ -6,6 +6,10 @@ using UnityEngine;
 [DefaultExecutionOrder(100)]
 public class CameraShake : MonoBehaviour
 {
+    [Header("On / Off")]
+    [Tooltip("Off by default: the camera stays perfectly steady. Turn on to bring back the tension shake and heartbeat kick.")]
+    public bool shakeEnabled = false;
+
     [Header("Tension Shake")]
     [Tooltip("How far the camera drifts at full tension, in units.")]
     public float maxShake = 0.04f;
@@ -43,6 +47,8 @@ public class CameraShake : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!shakeEnabled) return;
+
         // No heartbeat system, or no tension, means no shake at all
         float tension = HeartbeatSystem.Instance != null
             ? HeartbeatSystem.Instance.Tension
