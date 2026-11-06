@@ -31,7 +31,6 @@ public class RunPrompt : MonoBehaviour
     Text label;
     RectTransform labelRect;
     bool showingJump;
-    float changedAt = -999f;
 
     void Start()
     {
@@ -62,18 +61,11 @@ public class RunPrompt : MonoBehaviour
         if (jump != showingJump)
         {
             showingJump = jump;
-            changedAt = Time.unscaledTime;
             label.text = jump ? jumpText : runText;
             label.color = jump ? jumpColor : runColor;
         }
 
-        group.alpha = Mathf.MoveTowards(group.alpha, visible ? 1f : 0f, 4f * Time.unscaledDeltaTime);
-
-        // A pulse all the time, with a bigger punch when the word changes
-        float pulse = 1f + 0.04f * Mathf.Sin(Time.unscaledTime * 8f);
-        float since = Time.unscaledTime - changedAt;
-        float punch = since < 0.3f ? 1f + 0.35f * (1f - since / 0.3f) : 1f;
-        labelRect.localScale = Vector3.one * pulse * punch;
+        group.alpha = visible ? 1f : 0f;
     }
 
     void OnDisable()
@@ -122,14 +114,6 @@ public class RunPrompt : MonoBehaviour
         label.raycastTarget = false;
         label.text = runText;
         label.color = runColor;
-
-        Outline outline = textObj.AddComponent<Outline>();
-        outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
-        outline.effectDistance = new Vector2(6f, -6f);
-
-        Shadow shadow = textObj.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
-        shadow.effectDistance = new Vector2(12f, -12f);
 
         labelRect = label.rectTransform;
         labelRect.anchorMin = new Vector2(0.5f, verticalPosition);

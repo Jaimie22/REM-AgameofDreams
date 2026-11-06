@@ -14,12 +14,8 @@ public class SpadePickup : MonoBehaviour
     public float bobSpeed = 1.5f;
 
     [Header("Carried Spade")]
-    [Tooltip("The spade that appears in his hand. Leave empty to reuse this one.")]
-    public GameObject carriedPrefab;
-    [Tooltip("Where on the player it attaches. Leave empty to find a hand bone automatically.")]
+    [Tooltip("Where on the player it attaches. Leave empty to hold it at his side.")]
     public Transform handOverride;
-    [Tooltip("Attach to the left hand instead of the right.")]
-    public bool preferLeftHand = false;
     public Vector3 carryPosition = new Vector3(0f, 0.05f, 0.1f);
     [Tooltip("Lays the spade horizontally in the grip. Tune from here.")]
     public Vector3 carryRotation = new Vector3(0f, 0f, 90f);
@@ -60,7 +56,6 @@ public class SpadePickup : MonoBehaviour
         if (player == null) return;
 
         collected = true;
-        player.Audio.PlayPickup();
 
         GiveToPlayer(player.transform);
 
@@ -77,26 +72,16 @@ public class SpadePickup : MonoBehaviour
     // Puts a spade in the player's hand
     void GiveToPlayer(Transform player)
     {
-        Transform hand = handOverride != null ? handOverride : FindHand(player);
+        // The greybox player is a plain capsule, so the spade is held at his side
+        // unless a hand is assigned
+        bool inHand = handOverride != null;
+        Transform hand = inHand ? handOverride : player;
 
-        if (hand == null)
-        {
-            Debug.LogWarning("SpadePickup: no hand bone found. " +
-                             "Drag one into Hand Override on the spade prefab.");
-            hand = player;
-        }
-        else
-        {
-            Debug.Log("Spade attached to: " + hand.name);
-        }
-
-        GameObject carried = carriedPrefab != null
-            ? Instantiate(carriedPrefab)
-            : Instantiate(gameObject);
+        GameObject carried = Instantiate(gameObject);
 
         carried.name = "CarriedSpade";
         carried.transform.SetParent(hand, false);
-        carried.transform.localPosition = carryPosition;
+        carried.transform.localPosition = inHand ? carryPosition : new Vector3(0.45f, 0.5f, 0.15f);
         carried.transform.localRotation = Quaternion.Euler(carryRotation);
         carried.transform.localScale = Vector3.one * carryScale;
 
@@ -108,42 +93,5 @@ public class SpadePickup : MonoBehaviour
             Destroy(c);
 
         carried.SetActive(true);
-    }
-
-    // Finds a hand bone, first on a humanoid rig, then by searching the
-    // skeleton for something named like a hand
-    Transform FindHand(Transform player)
-    {
-        Animator animator = player.GetComponentInChildren<Animator>();
-
-        if (animator == null)
-        {
-            Debug.LogWarning("SpadePickup: no Animator found on the player.");
-            return null;
-        }
-
-        if (animator.isHuman)
-        {
-            Transform bone = animator.GetBoneTransform(
-                preferLeftHand ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand);
-
-            if (bone != null) return bone;
-            Debug.LogWarning("SpadePickup: humanoid rig, but no hand bone mapped.");
-        }
-        else
-        {
-            Debug.LogWarning("SpadePickup: the Animator's avatar is not humanoid.");
-        }
-
-        // Search the skeleton from the Animator down, which is where the bones live
-        string exact = preferLeftHand ? "l_hand" : "r_hand";
-
-        foreach (Transform t in animator.GetComponentsInChildren<Transform>(true))
-            if (t.name.ToLower() == exact) return t;
-
-        foreach (Transform t in animator.GetComponentsInChildren<Transform>(true))
-            if (t.name.ToLower().Contains("hand")) return t;
-
-        return null;
     }
 }

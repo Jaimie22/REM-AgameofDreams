@@ -34,10 +34,6 @@ public class GearPuzzle : MonoBehaviour
     public float openTime = 1.8f;
 
     // Set by GearGenerator, which holds the clips
-    [HideInInspector] public AudioClip placeClip;
-    [HideInInspector] public AudioClip meshClip;
-    [HideInInspector] public AudioClip startClip;
-    [HideInInspector] public AudioClip cageClip;
 
     public bool Solved { get; private set; }
 
@@ -60,7 +56,6 @@ public class GearPuzzle : MonoBehaviour
     float lastPressTime;
     bool ready;
     int linkedCount;
-    AudioSource source;
 
     // Called by the generator once the room is built
     public void SetUp(GearPiece motorGear, List<GearPeg> machinePegs, GearPiece outputGear,
@@ -159,7 +154,6 @@ public class GearPuzzle : MonoBehaviour
         }
 
         Carry(best, player);
-        CubeWorld.Instance.player.Audio.PlayPickup();
         Debug.Log("Picked up a gear. Press E beside a peg to place it.");
 
         EvaluateChain();
@@ -187,7 +181,6 @@ public class GearPuzzle : MonoBehaviour
 
         PutOnPeg(carried, peg);
         carried = null;
-        PlaySound(placeClip, 1f);
         Debug.Log("Placed a gear on the machine.");
 
         // The gear that was on the peg goes into his hands instead
@@ -258,7 +251,6 @@ public class GearPuzzle : MonoBehaviour
         carried = null;
 
         // Quieter than fitting it to a peg
-        PlaySound(placeClip, 0.5f);
         Debug.Log("Put the gear down.");
     }
 
@@ -310,14 +302,12 @@ public class GearPuzzle : MonoBehaviour
         }
 
         // Another gear has joined the chain
-        if (linked > linkedCount && !complete) PlaySound(meshClip, 0.8f);
         linkedCount = linked;
 
         if (!complete) return;
 
         // The chain reached the output gear
         Solved = true;
-        PlaySound(startClip, 1f);
         Debug.Log("The gears mesh. The cage begins to open.");
         StartCoroutine(OpenTheCage());
     }
@@ -327,7 +317,6 @@ public class GearPuzzle : MonoBehaviour
     {
         yield return new WaitForSeconds(openDelay);
 
-        PlaySound(cageClip, 1f);
 
         if (cage != null)
         {
@@ -344,24 +333,9 @@ public class GearPuzzle : MonoBehaviour
             cage.gameObject.SetActive(false);
         }
 
-        PlayerAudio.PlayDoorSound();
         Debug.Log("The cage is open. The door of light is free.");
     }
 
-    // A flat sound, heard the same wherever the player stands
-    void PlaySound(AudioClip clip, float volume)
-    {
-        if (clip == null) return;
-
-        if (source == null)
-        {
-            source = gameObject.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-            source.spatialBlend = 0f;
-        }
-
-        source.PlayOneShot(clip, Mathf.Clamp01(volume));
-    }
 
     // Distance along the floor, ignoring height
     float Flat(Vector3 a, Vector3 b)

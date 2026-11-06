@@ -24,12 +24,6 @@ public class CubeWorld : MonoBehaviour
     [Tooltip("Optional. Handles fog and lighting changes between faces.")]
     public MoodController moodController;
 
-    [Tooltip("Optional. The gradient backdrop shown in the cube view.")]
-    public BackgroundGradient backgroundGradient;
-
-    [Tooltip("Optional. The giant dreamer standing behind the cube.")]
-    public DreamerBackdrop dreamerBackdrop;
-
     [Header("Start")]
     [Tooltip("Which level the game starts on.")]
     [Range(1, 6)] public int startLevel = 1;
@@ -49,13 +43,6 @@ public class CubeWorld : MonoBehaviour
     public float dragRotateSpeed = 0.3f;
     [Tooltip("Max seconds between two clicks to count as a double-click.")]
     public float doubleClickTime = 0.3f;
-
-    [Header("Cube View Music")]
-    [Tooltip("Plays while the cube or map is on screen, and fades away when a level starts. Leave empty for none.")]
-    public AudioClip cubeViewMusic;
-    [Range(0f, 1f)] public float cubeViewMusicVolume = 0.35f;
-    [Tooltip("Seconds the music takes to fade in and out.")]
-    public float musicFadeTime = 1.5f;
 
     [Header("Transitions")]
     [Tooltip("Seconds it takes the cube to turn a face to the top.")]
@@ -83,7 +70,6 @@ public class CubeWorld : MonoBehaviour
     Vector3 savedLocalPosition;
     Quaternion savedLocalRotation;
 
-    AudioSource musicSource;
 
     void Awake()
     {
@@ -119,18 +105,6 @@ public class CubeWorld : MonoBehaviour
             vitalsUI = GetComponent<VitalsUI>();
         if (vitalsUI == null)
             vitalsUI = gameObject.AddComponent<VitalsUI>();
-
-        // The music for the cube view, silent until it's wanted
-        if (cubeViewMusic != null)
-        {
-            musicSource = gameObject.AddComponent<AudioSource>();
-            musicSource.clip = cubeViewMusic;
-            musicSource.loop = true;
-            musicSource.playOnAwake = false;
-            musicSource.spatialBlend = 0f;
-            musicSource.volume = 0f;
-            musicSource.Play();
-        }
 
         // One seed per face, rolled fresh for this playthrough
         faceSeeds = new int[faces.Length];
@@ -197,9 +171,6 @@ public class CubeWorld : MonoBehaviour
         PlatformGenerator platforms = faces[index].GetComponent<PlatformGenerator>();
         if (platforms != null && platforms.theme != null) levelTheme = platforms.theme;
 
-        // The footsteps and other sounds follow the level's surface
-        player.Audio.SetSurface(levelTheme);
-
         if (levelTheme == null) return;
         player.ApplyMovementSettings(levelTheme.gravity, levelTheme.jumpHeight);
     }
@@ -217,21 +188,8 @@ public class CubeWorld : MonoBehaviour
         LevelObjectives.Instance?.SetActiveFace(faces[index].transform);
     }
 
-    // Fades the cube view music in while the cube or map is showing, and out otherwise
-    void UpdateMusic()
-    {
-        if (musicSource == null) return;
-
-        bool wanted = CurrentMode == Mode.Overview || CurrentMode == Mode.Map;
-        float target = wanted ? cubeViewMusicVolume : 0f;
-        float step = Time.unscaledDeltaTime / Mathf.Max(0.1f, musicFadeTime);
-
-        musicSource.volume = Mathf.MoveTowards(musicSource.volume, target, step * Mathf.Max(cubeViewMusicVolume, 0.1f));
-    }
-
     void Update()
     {
-        UpdateMusic();
 
         if (CurrentMode == Mode.Transitioning) return;
 
@@ -311,8 +269,6 @@ public class CubeWorld : MonoBehaviour
         player.Hide();
         dreamCamera.SetMapView(faces[CurrentFaceIndex].transform);
 
-        backgroundGradient?.SetVisible(true);
-        dreamerBackdrop?.SetVisible(true);
         moodController?.SetAwayFromLevel(true);
 
         CurrentMode = Mode.Map;
@@ -325,8 +281,6 @@ public class CubeWorld : MonoBehaviour
         player.Hide();
         dreamCamera.SetOverview();
 
-        backgroundGradient?.SetVisible(true);
-        dreamerBackdrop?.SetVisible(true);
         moodController?.SetAwayFromLevel(true);
 
         CurrentMode = Mode.Overview;
@@ -358,8 +312,6 @@ public class CubeWorld : MonoBehaviour
         CubeFace face = faces[CurrentFaceIndex];
 
         // The fog rolls back in as the cube turns
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
         moodController?.SetAwayFromLevel(false);
 
         // The cube may have been spun while away, so turn it back
@@ -406,8 +358,6 @@ public class CubeWorld : MonoBehaviour
         Physics.SyncTransforms();
 
         // The game opens inside a level, not in the cube view
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
         moodController?.SetAwayFromLevel(false);
 
        
@@ -542,8 +492,6 @@ public class CubeWorld : MonoBehaviour
         CubeFace face = faces[index];
 
         // The backdrop fades and the level's fog rolls in as the cube turns
-        backgroundGradient?.SetVisible(false);
-        dreamerBackdrop?.SetVisible(false);
         moodController?.SetAwayFromLevel(false);
 
         // A fresh start on this face, so any saved spot is no longer valid

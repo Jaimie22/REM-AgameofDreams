@@ -45,10 +45,7 @@ public class MoodController : MonoBehaviour
 
         if (mood == null) return;
 
-        RenderSettings.fog = mood.fogEnabled;
-        RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogColor = mood.fogColor;
-        RenderSettings.fogDensity = mood.fogDensity;
+        RenderSettings.fog = false;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = mood.ambientColor;
 
@@ -79,10 +76,7 @@ public class MoodController : MonoBehaviour
         {
             float lift = fogLiftSpeed * Time.deltaTime;
 
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, awayFogColor, lift);
-            RenderSettings.fogDensity = Mathf.Lerp(RenderSettings.fogDensity, awayFogDensity, lift);
+            RenderSettings.fog = false;
 
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight =
@@ -99,12 +93,7 @@ public class MoodController : MonoBehaviour
         // In a level: blend towards that face's mood
         float t = blendSpeed * Time.deltaTime;
 
-        RenderSettings.fog = target.fogEnabled || RenderSettings.fogDensity > 0.001f;
-        RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, target.fogColor, t);
-
-        float wantedDensity = target.fogEnabled ? target.fogDensity : 0f;
-        RenderSettings.fogDensity = Mathf.Lerp(RenderSettings.fogDensity, wantedDensity, t);
+        RenderSettings.fog = false;
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = Color.Lerp(RenderSettings.ambientLight, target.ambientColor, t);

@@ -69,8 +69,6 @@ public class PlatformGenerator : MonoBehaviour
     public float edgeWallHeight = 4f;
 
     [Header("Demons")]
-    [Tooltip("The same hunter prefab used on the maze level. Leave empty for no demons.")]
-    public GameObject demonPrefab;
     [Range(0, 8)] public int demonCount = 4;
     [Tooltip("Keep this below the player's move speed so they can be outrun.")]
     public float demonChaseSpeed = 3f;
@@ -88,15 +86,11 @@ public class PlatformGenerator : MonoBehaviour
     [Header("Fragments")]
     [Tooltip("How high above the island a fragment hovers.")]
     public float fragmentHeight = 1.2f;
-    [Tooltip("Optional. A model to use instead of a plain crystal.")]
-    public GameObject fragmentPrefab;
     public float fragmentSize = 0.6f;
 
     [Header("Altar")]
     public float altarSize = 1.4f;
     public float altarTriggerRadius = 2.5f;
-    [Tooltip("Optional. A model to use instead of a plain block.")]
-    public GameObject altarPrefab;
 
     [Header("Colours (used when no material is assigned)")]
     public Color islandColor = new Color(0.38f, 0.4f, 0.52f);
@@ -525,7 +519,7 @@ public class PlatformGenerator : MonoBehaviour
     // Demons wandering the floor. They hunt by sight, and a catch costs a heart.
     void BuildDemons()
     {
-        if (demonPrefab == null || demonCount <= 0) return;
+        if (demonCount <= 0) return;
 
         CubeWorld world = CubeWorld.Instance;
         int faceIndex = world != null ? System.Array.IndexOf(world.faces, GetComponent<CubeFace>()) : -1;
@@ -550,9 +544,29 @@ public class PlatformGenerator : MonoBehaviour
         }
     }
 
+    // A plain red capsule
+    GameObject MakePlaceholderDemon()
+    {
+        GameObject demon = new GameObject("Demon");
+        demon.transform.SetParent(root, false);
+
+        GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Body";
+        body.transform.SetParent(demon.transform, false);
+        body.transform.localPosition = Vector3.up * 0.9f;
+        body.transform.localScale = new Vector3(0.8f, 0.9f, 0.8f);
+        SafeDestroy(body.GetComponent<Collider>());
+
+        Renderer rend = body.GetComponent<Renderer>();
+        rend.material.SetColor("_BaseColor", new Color(0.7f, 0.12f, 0.12f));
+        rend.material.SetColor("_Color", new Color(0.7f, 0.12f, 0.12f));
+
+        return demon;
+    }
+
     void BuildDemon(int number, Vector3 spot, int faceIndex)
     {
-        GameObject demon = Instantiate(demonPrefab, root);
+        GameObject demon = MakePlaceholderDemon();
         demon.name = "Demon_" + number;
         demon.transform.localPosition = spot;
         demon.transform.localRotation = Quaternion.Euler(0f, RandomRange(0f, 360f), 0f);
@@ -598,18 +612,11 @@ public class PlatformGenerator : MonoBehaviour
     {
         GameObject obj;
 
-        if (altarPrefab != null)
-        {
-            obj = Instantiate(altarPrefab, root);
-            obj.transform.localPosition = position;
-        }
-        else
-        {
-            obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            obj.transform.SetParent(root, false);
-            obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
-            obj.transform.localScale = Vector3.one * altarSize;
-        }
+        obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        obj.transform.SetParent(root, false);
+        obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
+        obj.transform.localScale = Vector3.one * altarSize;
+    
 
         obj.name = "DreamAltar";
 
@@ -633,28 +640,17 @@ public class PlatformGenerator : MonoBehaviour
     {
         GameObject go;
 
-        if (fragmentPrefab != null)
-        {
-            go = Instantiate(fragmentPrefab, parent);
-            go.transform.localPosition = localPos;
+        go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = localPos;
+        go.transform.localScale = Vector3.one * fragmentSize;
+        go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
 
-            Collider col = go.GetComponentInChildren<Collider>();
-            if (col == null) col = go.AddComponent<SphereCollider>();
-            col.isTrigger = true;
-        }
-        else
-        {
-            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = Vector3.one * fragmentSize;
-            go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
+        if (theme != null && theme.collectibleMaterial != null)
+            go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
 
-            if (theme != null && theme.collectibleMaterial != null)
-                go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
-
-            go.GetComponent<Collider>().isTrigger = true;
-        }
+        go.GetComponent<Collider>().isTrigger = true;
+    
 
         go.name = "DreamFragment_" + number;
         if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();

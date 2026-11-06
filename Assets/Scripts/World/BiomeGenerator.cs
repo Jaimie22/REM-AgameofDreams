@@ -41,8 +41,6 @@ public class BiomeGenerator : MonoBehaviour
     public int sandRowVariation = 2;
 
     [Header("The Spade")]
-    [Tooltip("The spade the player must find before digging. Leave empty for no spade.")]
-    public GameObject spadePrefab;
     [Tooltip("How high above the sand it sits.")]
     public float spadeHeight = 0.4f;
     [Tooltip("Keeps it this far from the vat, so it isn't found instantly.")]
@@ -60,8 +58,6 @@ public class BiomeGenerator : MonoBehaviour
     [Header("Palm Trees")]
     public bool scatterPalms = true;
     public int palmCount = 14;
-    [Tooltip("Optional. A model to use instead of the built-in palm.")]
-    public GameObject palmPrefab;
     public Vector2 palmHeight = new Vector2(3.5f, 5.5f);
     [Tooltip("Keeps palms this far from the vat, so they never block it.")]
     public float palmClearance = 4f;
@@ -331,8 +327,6 @@ public class BiomeGenerator : MonoBehaviour
     // Drops the spade somewhere on the land, away from the vat
     void PlaceSpade()
     {
-        if (spadePrefab == null) return;
-
         Vector3 spot = Vector3.zero;
         bool found = false;
 
@@ -351,18 +345,44 @@ public class BiomeGenerator : MonoBehaviour
         // Fall back to the middle of the land if nowhere suitable turned up
         if (!found) spot = new Vector3(0f, baseHeight, -half + landDepth * 0.5f);
 
-        GameObject spade = Instantiate(spadePrefab, root);
-        spade.name = "Spade";
+        // A plain spade: a thin handle with a flat blade at the bottom
+        GameObject spade = new GameObject("Spade");
+        spade.transform.SetParent(root, false);
         spade.transform.localPosition = spot + Vector3.up * spadeHeight;
+
+        MakeSpadePart(spade.transform, "Handle", PrimitiveType.Cylinder,
+                      new Vector3(0f, 0.8f, 0f), new Vector3(0.08f, 0.5f, 0.08f),
+                      new Color(0.45f, 0.3f, 0.15f));
+        MakeSpadePart(spade.transform, "Blade", PrimitiveType.Cube,
+                      new Vector3(0f, 0.2f, 0f), new Vector3(0.35f, 0.4f, 0.05f),
+                      new Color(0.6f, 0.62f, 0.66f));
         spade.transform.localRotation = Quaternion.Euler(0f, RandomRange(0f, 360f), 0f);
 
         // Make sure it can actually be picked up
         if (spade.GetComponent<SpadePickup>() == null)
             spade.AddComponent<SpadePickup>();
 
-        Collider col = spade.GetComponentInChildren<Collider>();
-        if (col == null) col = spade.AddComponent<BoxCollider>();
+        BoxCollider col = spade.AddComponent<BoxCollider>();
+        col.center = new Vector3(0f, 0.7f, 0f);
+        col.size = new Vector3(0.6f, 1.4f, 0.6f);
         col.isTrigger = true;
+    }
+
+    void MakeSpadePart(Transform parent, string name, PrimitiveType shape,
+                       Vector3 localPos, Vector3 scale, Color colour)
+    {
+        GameObject part = GameObject.CreatePrimitive(shape);
+        part.name = name;
+        part.transform.SetParent(parent, false);
+        part.transform.localPosition = localPos;
+        part.transform.localScale = scale;
+
+        Collider c = part.GetComponent<Collider>();
+        if (c != null) Destroy(c);
+
+        Renderer rend = part.GetComponent<Renderer>();
+        rend.material.SetColor("_BaseColor", colour);
+        rend.material.SetColor("_Color", colour);
     }
     void ScatterPalms()
     {
@@ -386,15 +406,6 @@ public class BiomeGenerator : MonoBehaviour
     // A palm tree built from primitives: a leaning trunk and a crown of fronds
     void BuildPalm(Vector3 spot, int number)
     {
-        if (palmPrefab != null)
-        {
-            GameObject fromPrefab = Instantiate(palmPrefab, root);
-            fromPrefab.name = "Palm_" + number;
-            fromPrefab.transform.localPosition = spot;
-            fromPrefab.transform.localRotation = Quaternion.Euler(0f, RandomRange(0f, 360f), 0f);
-            return;
-        }
-
         GameObject palm = new GameObject("Palm_" + number);
         palm.transform.SetParent(root, false);
         palm.transform.localPosition = spot;

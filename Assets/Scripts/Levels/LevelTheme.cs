@@ -68,34 +68,4 @@ public class LevelTheme : ScriptableObject
     public Material wallMaterial;
     public Material doorMaterial;
     public Material collectibleMaterial;
-
-    [Header("Sounds")]
-    [Tooltip("Footsteps on this level's floor. One is picked at random for each step.")]
-    public AudioClip[] footstepClips;
-    [Tooltip("Louder or quieter footsteps. Some surfaces, like glass, need turning up.")]
-    [Range(0f, 2f)] public float footstepVolume = 1f;
-    public AudioClip jumpClip;
-    [Tooltip("Played when the player picks something up on this level.")]
-    public AudioClip pickupClip;
-    [Tooltip("Played when the door of light appears (or, on the gear level, when the cage opens).")]
-    public AudioClip doorClip;
-    [Tooltip("A loop that plays quietly all through the level.")]
-    public AudioClip ambientClip;
-    [Range(0f, 1f)] public float ambientVolume = 0.5f;
-
-    [Header("Digging Sounds")]
-    [Tooltip("The spade biting into the ground. One is picked at random for each dig.")]
-    public AudioClip[] digClips;
-    [Tooltip("A loop of running water, played while the channel fills.")]
-    public AudioClip waterFlowClip;
-    [Range(0f, 1f)] public float waterFlowVolume = 0.6f;
-
-    [Header("Hunter Sounds")]
-    [Tooltip("The hunter crawling. One is picked at random for each step.")]
-    public AudioClip[] crawlClips;
-    [Range(0f, 1.5f)] public float crawlVolume = 1f;
-    [Tooltip("The hunter lunging when it catches the player.")]
-    public AudioClip attackClip;
-    [Tooltip("Played to the player when they're caught.")]
-    public AudioClip deathClip;
 }

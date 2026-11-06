@@ -7,8 +7,6 @@ using UnityEngine;
 public class HunterSpawner : MonoBehaviour
 {
     [Header("The Hunter")]
-    [Tooltip("Your hunter model. Leave empty for a placeholder figure.")]
-    public GameObject hunterPrefab;
     [Tooltip("Index of this face in CubeWorld's Faces array (0 = Level 1).")]
     public int faceIndex = 2;
 
@@ -48,9 +46,7 @@ public class HunterSpawner : MonoBehaviour
 
         Vector3 spot = PickSpot(face, parent);
 
-        GameObject hunter = hunterPrefab != null
-            ? Instantiate(hunterPrefab, parent)
-            : BuildPlaceholder(parent);
+        GameObject hunter = BuildPlaceholder(parent);
 
         hunter.name = HunterName;
         hunter.transform.localPosition = spot;
@@ -194,7 +190,7 @@ public class HunterSpawner : MonoBehaviour
         body.transform.localScale = new Vector3(0.6f, placeholderHeight * 0.5f, 0.6f);
 
         SafeDestroy(body.GetComponent<Collider>());
-        TintObject(body, bodyColor, 0f);
+        TintObject(body, bodyColor);
 
         MakeEye(obj.transform, new Vector3(-0.14f, placeholderHeight * 0.85f, 0.26f));
         MakeEye(obj.transform, new Vector3(0.14f, placeholderHeight * 0.85f, 0.26f));
@@ -211,10 +207,10 @@ public class HunterSpawner : MonoBehaviour
         eye.transform.localScale = Vector3.one * 0.11f;
 
         SafeDestroy(eye.GetComponent<Collider>());
-        TintObject(eye, eyeColor, 2.5f);
+        TintObject(eye, eyeColor);
     }
 
-    void TintObject(GameObject go, Color color, float emission)
+    void TintObject(GameObject go, Color color)
     {
         Renderer rend = go.GetComponent<Renderer>();
         if (rend == null) return;
@@ -225,12 +221,6 @@ public class HunterSpawner : MonoBehaviour
         Material mat = new Material(shader);
         mat.SetColor("_BaseColor", color);
         mat.SetColor("_Color", color);
-
-        if (emission > 0f)
-        {
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", color * emission);
-        }
 
         rend.sharedMaterial = mat;
     }

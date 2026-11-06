@@ -42,15 +42,6 @@ public class AwakeningSequence : MonoBehaviour
     public int creditsFontSize = 28;
     public Color creditsColor = new Color(0.9f, 0.95f, 1f);
 
-    [Header("Music")]
-    [Tooltip("Plays as he falls and the credits roll. Leave empty for silence.")]
-    public AudioClip creditsMusic;
-    [Range(0f, 1f)] public float musicVolume = 0.6f;
-    [Tooltip("Seconds the music takes to fade in.")]
-    public float musicFadeIn = 2f;
-    [Tooltip("Seconds it takes to fade out at the very end.")]
-    public float musicFadeOut = 3f;
-
     [Header("Ending")]
     [Tooltip("Seconds of black after the credits before anything else.")]
     public float holdOnBlack = 3f;
@@ -60,7 +51,6 @@ public class AwakeningSequence : MonoBehaviour
     RawImage sky;
     Text credits;
     Image blackout;
-    AudioSource music;
 
     bool running;
 
@@ -106,7 +96,6 @@ public class AwakeningSequence : MonoBehaviour
         float elapsed = 0f;
 
         StartCoroutine(FadeSky());
-        StartMusic();
 
         // Turn him to face the camera, so we see him rather than his back
         falling.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
@@ -134,9 +123,6 @@ public class AwakeningSequence : MonoBehaviour
             yield return null;
         }
 
-        // Fade the music out alongside the picture, so they land together
-        StartCoroutine(FadeMusicOut());
-
         yield return FadeToBlack();
         yield return new WaitForSeconds(holdOnBlack);
 
@@ -156,49 +142,6 @@ public class AwakeningSequence : MonoBehaviour
 
         cam.transform.position = new Vector3(wanted.x, laggedY, wanted.z);
         cam.transform.LookAt(falling.position + Vector3.up * aimHeight);
-    }
-
-    // --- Music ------------------------------------------------------
-
-    void StartMusic()
-    {
-        if (creditsMusic == null) return;
-
-        music = gameObject.AddComponent<AudioSource>();
-        music.clip = creditsMusic;
-        music.loop = true;
-        music.spatialBlend = 0f;    // heard everywhere, not from a point in space
-        music.volume = 0f;
-        music.Play();
-
-        StartCoroutine(FadeMusicIn());
-    }
-
-    IEnumerator FadeMusicIn()
-    {
-        for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, musicFadeIn))
-        {
-            music.volume = Mathf.Lerp(0f, musicVolume, t);
-            yield return null;
-        }
-
-        music.volume = musicVolume;
-    }
-
-    IEnumerator FadeMusicOut()
-    {
-        if (music == null) yield break;
-
-        float from = music.volume;
-
-        for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, musicFadeOut))
-        {
-            music.volume = Mathf.Lerp(from, 0f, t);
-            yield return null;
-        }
-
-        music.volume = 0f;
-        music.Stop();
     }
 
     // --- Canvas and UI ----------------------------------------------

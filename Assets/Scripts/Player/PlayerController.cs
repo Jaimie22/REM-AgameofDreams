@@ -35,21 +35,7 @@ public class PlayerController : MonoBehaviour
     public string airborneParameter = "";
     public float animationDamping = 0.1f;
 
-    // The player's footsteps, jumps and pickup sounds. Added the first time it's asked for,
-    // so the player needs no setup, even if it starts the game hidden.
-    public PlayerAudio Audio
-    {
-        get
-        {
-            if (playerAudio == null) playerAudio = GetComponent<PlayerAudio>();
-            if (playerAudio == null) playerAudio = gameObject.AddComponent<PlayerAudio>();
-            return playerAudio;
-        }
-    }
-
-    PlayerAudio playerAudio;
-
-    // The player's health and energy. Added the first time it's asked for, like the audio.
+    // The player's health and energy. Added the first time it's asked for, on first use.
     public PlayerVitals Vitals
     {
         get
@@ -69,6 +55,9 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         controller = GetComponent<CharacterController>();
+
+        // Greybox: a plain capsule instead of the finished character model
+        GreyboxShape.Replace(gameObject, new Color(0.3f, 0.55f, 0.95f));
 
         if (animator == null)
         {
@@ -127,7 +116,6 @@ public class PlayerController : MonoBehaviour
             verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             lastGroundedTime = -999f; // stops a second jump in mid-air
 
-            Audio.PlayJump();
         }
 
         verticalVelocity += gravity * Time.deltaTime;

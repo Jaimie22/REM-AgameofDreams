@@ -8,9 +8,6 @@ using System.Collections.Generic;
 [RequireComponent(typeof(CubeFace))]
 public class LevelGenerator : MonoBehaviour
 {
-    // Shapes a dream fragment can take
-    public enum FragmentShape { Crystal, Cube, Sphere, Capsule, Cylinder, Prefab }
-
     [Header("Theme")]
     [Tooltip("The LevelTheme asset holding this level's settings.")]
     public LevelTheme theme;
@@ -27,14 +24,68 @@ public class LevelGenerator : MonoBehaviour
     [Tooltip("How high the walkways float above the cube surface.")]
     public float baseHeight = 1.5f;
 
-    [Header("Fragment Shape")]
-    public FragmentShape fragmentShape = FragmentShape.Crystal;
-    [Tooltip("Overall size of the fragment.")]
+    [Header("Greybox Colours")]
+    public Color floorColour = new Color(0.62f, 0.72f, 0.9f);
+    public Color wallColour = new Color(0.35f, 0.38f, 0.5f);
+    [Tooltip("Pillars are see-through. Lower alpha is more see-through.")]
+    public Color pillarColour = new Color(0.7f, 0.8f, 1f, 0.25f);
+
+    Material floorMat, wallMat, pillarMat;
+
+    [Header("Pillars")]
+    [Tooltip("Chance that a platform has a pillar on it. Each gets at most one.")]
+    [Range(0f, 1f)] public float pillarChance = 0.2f;
+
+    [Header("Platforms")]
+    [Tooltip("How much of its cell each platform fills. Lower gives smaller platforms with bigger gaps between them.")]
+    [Range(0.4f, 0.95f)] public float platformFill = 0.8f;
+    [Tooltip("Chance that a platform grows an extra cell wider (and again for deeper). Lower gives more small platforms.")]
+    [Range(0f, 1f)] public float widePlatformChance = 0.45f;
+    [Tooltip("The most cells a platform can be wide or deep.")]
+    [Range(1, 4)] public int maxPlatformCells = 3;
+    [Tooltip("How far a platform can wander from the middle of its cell. Keep small, so no gap is too wide to jump.")]
+    public float platformJitter = 0.12f;
+
+    // Where each platform actually sits (its middle, at floor height)
+    Dictionary<int, Vector3> platformCenter = new Dictionary<int, Vector3>();
+    float PlatformSize { get { return cell * platformFill; } }
+
+    Material FloorMat() { if (floorMat == null) floorMat = MakeMat(floorColour, false); return floorMat; }
+    Material WallMat() { if (wallMat == null) wallMat = MakeMat(wallColour, false); return wallMat; }
+    Material PillarMat() { if (pillarMat == null) pillarMat = MakeMat(pillarColour, true); return pillarMat; }
+
+    // A plain flat-coloured material, so nothing depends on the theme's textures
+    static Material MakeMat(Color colour, bool see_through)
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+        Material m = new Material(shader);
+        m.color = colour;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", colour);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0f);
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+
+        if (see_through)
+        {
+            if (m.HasProperty("_Surface"))   // URP: transparent, alpha blended
+            {
+                m.SetFloat("_Surface", 1f);
+                m.SetFloat("_Blend", 0f);
+                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                m.SetFloat("_ZWrite", 0f);
+                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                m.SetOverrideTag("RenderType", "Transparent");
+                m.SetShaderPassEnabled("ShadowCaster", false);
+            }
+            m.renderQueue = 3000;
+        }
+        return m;
+    }
+
+    [Header("Fragment")]
+    [Tooltip("Size of the fragment cube.")]
     public float fragmentSize = 0.6f;
-    [Tooltip("Stretches the shape vertically. 1 = even, 2 = tall and thin.")]
-    public float fragmentStretch = 1.4f;
-    [Tooltip("Used when Shape is set to Prefab. Drop any model in here.")]
-    public GameObject fragmentPrefab;
 
     [Header("Fragment Placement")]
     [Tooltip("How high above the floor fragments hover. Raise if they sit too low.")]
@@ -116,6 +167,14 @@ public class LevelGenerator : MonoBehaviour
         ClearGenerated();
         root = new GameObject(GeneratedName).transform;
         root.SetParent(content, false);
+
+        // The placeholder ground plane under the level isn't wanted. Its collider stays, so nothing falls through.
+        Transform placeholder = content.Find("Floor");
+        if (placeholder != null)
+        {
+            Renderer r = placeholder.GetComponent<Renderer>();
+            if (r != null) r.enabled = false;
+        }
 
         // Pick a grid size, then stretch the cells so they fill the face exactly
         float usable = faceSize - edgeMargin * 2f;
@@ -353,54 +412,112 @@ public class LevelGenerator : MonoBehaviour
         gapCells.Clear();
         pillarsByCell.Clear();
         usedCells.Clear();
+        platformCenter.Clear();
 
-        foreach (KeyValuePair<int, float> pair in carved)
+        // Lift everything so the lowest platform sits at Base Height. Otherwise low ones end up buried in the ground.
+        float lowest = float.MaxValue;
+        foreach (float v in carved.Values) lowest = Mathf.Min(lowest, v);
+
+        // The gap left between neighbouring platforms is always the same, however big the platforms are
+        float gap = cell * (1f - platformFill);
+
+        // Visit the cells in a random order, so the big platforms land in different places each time
+        List<int> order = new List<int>(carved.Keys);
+        Shuffle(order);
+
+        HashSet<int> taken = new HashSet<int>();
+
+        foreach (int c in order)
         {
-            int c = pair.Key;
-            float h = baseHeight + pair.Value;
-            Vector3 center = CellCenter(c, h);
+            if (taken.Contains(c)) continue;
 
             bool special = c == startCell || c == exitCell;
-            Vector3 dir = DirectionFromParent(c);
 
-            // Occasionally split the floor, leaving a gap to jump
-            bool gap = !special && dir != Vector3.zero && rng.NextDouble() < theme.gapChance;
-
-            if (gap)
+            // Pick how many cells wide and deep this platform is. Start and exit stay one cell.
+            int bw = 1, bh = 1;
+            if (!special)
             {
-                MakeSplitFloor(c, center, dir);
-                gapCells.Add(c);
-            }
-            else
-            {
-                MakeFloor("Floor_" + c, center, new Vector3(cell, 1f, cell));
+                while (bw < maxPlatformCells && rng.NextDouble() < widePlatformChance) bw++;
+                while (bh < maxPlatformCells && rng.NextDouble() < widePlatformChance) bh++;
             }
 
-            if (special || gap) continue;
-
-            // A wall across the cell with a gap to walk through
-            if (dir != Vector3.zero && rng.NextDouble() < theme.wallChance)
+            // Shrink it until every cell it covers is free
+            int x0 = CellX(c), y0 = CellY(c);
+            while (!BlockIsFree(x0, y0, bw, bh, taken))
             {
-                MakeWall(c, center, dir);
-                wallCells.Add(c);
+                if (bw >= bh && bw > 1) bw--;
+                else if (bh > 1) bh--;
+                else break;
             }
 
-            // Loose pillars to break up the space, remembered so fragments can dodge them
-            int pillars = rng.Next(theme.pillarsPerCell.x, theme.pillarsPerCell.y + 1);
-            for (int p = 0; p < pillars; p++)
+            // The platform sits at the average height of the cells it covers
+            float heightSum = 0f;
+            for (int dx = 0; dx < bw; dx++)
+                for (int dy = 0; dy < bh; dy++)
+                {
+                    int cc = Index(x0 + dx, y0 + dy);
+                    taken.Add(cc);
+                    heightSum += carved[cc];
+                }
+            float h = baseHeight + heightSum / (bw * bh) - lowest;
+
+            // Centre of the block, with a little drift (none for the start and exit)
+            Vector3 corner = CellCenter(c, h);
+            Vector3 center = corner + new Vector3((bw - 1) * cell * 0.5f, 0f, (bh - 1) * cell * 0.5f);
+            float jx = 0f, jz = 0f;
+            if (!special)
             {
-                float ox = (float)(rng.NextDouble() - 0.5) * cell * 0.6f;
-                float oz = (float)(rng.NextDouble() - 0.5) * cell * 0.6f;
-
-                Vector3 pos = center + new Vector3(ox, theme.pillarSize, oz);
-                GameObject pillar = MakeCube("Pillar_" + c + "_" + p, pos,
-                    new Vector3(theme.pillarSize, theme.pillarSize * 2f, theme.pillarSize),
-                    theme.wallMaterial);
-
-                if (!pillarsByCell.ContainsKey(c)) pillarsByCell[c] = new List<GameObject>();
-                pillarsByCell[c].Add(pillar);
+                jx = (float)(rng.NextDouble() * 2.0 - 1.0) * platformJitter;
+                jz = (float)(rng.NextDouble() * 2.0 - 1.0) * platformJitter;
             }
+            center.x += jx;
+            center.z += jz;
+
+            MakeFloor("Floor_" + c, center, new Vector3(bw * cell - gap, 1f, bh * cell - gap));
+
+            // Every cell it covers is a place for a fragment or pillar, standing on this platform
+            for (int dx = 0; dx < bw; dx++)
+                for (int dy = 0; dy < bh; dy++)
+                {
+                    int cc = Index(x0 + dx, y0 + dy);
+                    Vector3 cellPos = CellCenter(cc, h);
+                    cellPos.x += jx;
+                    cellPos.z += jz;
+                    platformCenter[cc] = cellPos;
+
+                    if (cc == startCell || cc == exitCell) continue;
+
+                    // Loose pillars to break up the space, remembered so fragments can dodge them
+                    if (rng.NextDouble() >= pillarChance) continue;
+
+                    float ox = (float)(rng.NextDouble() - 0.5) * PlatformSize * 0.6f;
+                    float oz = (float)(rng.NextDouble() - 0.5) * PlatformSize * 0.6f;
+
+                    Vector3 pos = cellPos + new Vector3(ox, theme.pillarSize, oz);
+                    GameObject pillar = MakeCube("Pillar_" + cc, pos,
+                        new Vector3(theme.pillarSize, theme.pillarSize * 2f, theme.pillarSize),
+                        PillarMat());
+
+                    if (!pillarsByCell.ContainsKey(cc)) pillarsByCell[cc] = new List<GameObject>();
+                    pillarsByCell[cc].Add(pillar);
+                }
         }
+    }
+
+    // True if every cell in the block is carved, unused, and not the start or exit
+    bool BlockIsFree(int x0, int y0, int bw, int bh, HashSet<int> taken)
+    {
+        for (int dx = 0; dx < bw; dx++)
+            for (int dy = 0; dy < bh; dy++)
+            {
+                int x = x0 + dx, y = y0 + dy;
+                if (!InGrid(x, y)) return false;
+
+                int cc = Index(x, y);
+                if (!carved.ContainsKey(cc) || taken.Contains(cc)) return false;
+                if ((dx > 0 || dy > 0) && (cc == startCell || cc == exitCell)) return false;
+            }
+        return true;
     }
 
     // Which way the player travels through this cell
@@ -434,7 +551,7 @@ public class LevelGenerator : MonoBehaviour
     {
         Vector3 cross = Vector3.Cross(Vector3.up, dir);
 
-        float width = cell;
+        float width = PlatformSize;
         float gapCenter = (float)(rng.NextDouble() - 0.5) * Mathf.Max(0f, width - theme.wallGap);
 
         float leftWidth = (gapCenter - theme.wallGap * 0.5f) + width * 0.5f;
@@ -446,7 +563,7 @@ public class LevelGenerator : MonoBehaviour
             size.y = theme.wallHeight;
             Vector3 pos = center + cross * (-width * 0.5f + leftWidth * 0.5f)
                                  + Vector3.up * theme.wallHeight * 0.5f;
-            MakeCube("Wall_" + c + "_L", pos, size, theme.wallMaterial);
+            MakeCube("Wall_" + c + "_L", pos, size, WallMat());
         }
 
         if (rightWidth > 0.3f)
@@ -455,7 +572,7 @@ public class LevelGenerator : MonoBehaviour
             size.y = theme.wallHeight;
             Vector3 pos = center + cross * (width * 0.5f - rightWidth * 0.5f)
                                  + Vector3.up * theme.wallHeight * 0.5f;
-            MakeCube("Wall_" + c + "_R", pos, size, theme.wallMaterial);
+            MakeCube("Wall_" + c + "_R", pos, size, WallMat());
         }
     }
 
@@ -465,8 +582,7 @@ public class LevelGenerator : MonoBehaviour
         CubeFace face = GetComponent<CubeFace>();
         if (face != null && face.spawnPoint != null)
         {
-            float startHeight = baseHeight + carved[startCell];
-            face.spawnPoint.localPosition = CellCenter(startCell, startHeight) + Vector3.up * 0.2f;
+            face.spawnPoint.localPosition = platformCenter[startCell] + Vector3.up * 0.2f;
             face.spawnPoint.localRotation = Quaternion.identity;
         }
     }
@@ -477,8 +593,7 @@ public class LevelGenerator : MonoBehaviour
         int wanted = theme.collectibles;
 
         // --- The altar, on the exit cell so it's a clear destination ---
-        float exitHeight = baseHeight + carved[exitCell];
-        Vector3 altarPos = CellCenter(exitCell, exitHeight);
+        Vector3 altarPos = platformCenter[exitCell];
 
         GameObject altarObj;
         if (altarPrefab != null)
@@ -512,7 +627,7 @@ public class LevelGenerator : MonoBehaviour
         Vector3 doorDir = DirectionFromParent(exitCell);
         if (doorDir == Vector3.zero) doorDir = Vector3.forward;
 
-        GameObject door = MakeCube("DreamDoor", altarPos + doorDir * cell * 0.4f + Vector3.up * 1.5f,
+        GameObject door = MakeCube("DreamDoor", altarPos + doorDir * PlatformSize * 0.3f + Vector3.up * 1.5f,
                                    new Vector3(3f, 3f, 0.5f), theme.doorMaterial);
         door.transform.localRotation = Quaternion.LookRotation(doorDir);
         door.GetComponent<Collider>().isTrigger = true;
@@ -595,12 +710,12 @@ public class LevelGenerator : MonoBehaviour
     // sitting on the real floor surface rather than a calculated height
     bool TryFindSpot(int c, out Vector3 spot)
     {
-        float guessHeight = baseHeight + carved[c];
-        Vector3 center = CellCenter(c, guessHeight);
+        Vector3 center = platformCenter[c];
+        float guessHeight = center.y;
 
-        // Try the middle first, then a ring of offsets around it
+        // Try the middle first, then a ring of offsets around it. All of it stays on the platform.
         List<Vector3> tries = new List<Vector3> { center };
-        float reach = cell * 0.3f;
+        float reach = PlatformSize * 0.3f;
 
         for (int i = 0; i < 8; i++)
         {
@@ -615,7 +730,8 @@ public class LevelGenerator : MonoBehaviour
             if (!IsClearOfPillars(c, candidate, needed)) continue;
 
             // Find the actual surface under this spot, so nothing ends up buried
-            float surface = FindSurfaceHeight(candidate, guessHeight);
+            float surface;
+            if (!FindSurfaceHeight(candidate, out surface)) continue;   // not over a platform, so don't use it
 
             spot = new Vector3(candidate.x, surface + fragmentHeight, candidate.z);
             return true;
@@ -626,22 +742,28 @@ public class LevelGenerator : MonoBehaviour
     }
 
     // Casts a ray down onto the generated floor and returns its top surface,
-    // falling back to the calculated height if nothing is hit
-    float FindSurfaceHeight(Vector3 localPos, float fallback)
+    // and fails if it isn't over one of the platforms
+    bool FindSurfaceHeight(Vector3 localPos, out float height)
     {
         // Start well above the spot, in world space, pointing at the face
         Vector3 worldStart = root.TransformPoint(localPos + Vector3.up * 10f);
         Vector3 worldDown = root.TransformDirection(Vector3.down);
 
-        if (Physics.Raycast(worldStart, worldDown, out RaycastHit hit, 30f,
-                            ~0, QueryTriggerInteraction.Ignore))
+        // Look at everything the ray passes through, because a pillar can sit between the sky and the platform
+        RaycastHit[] hits = Physics.RaycastAll(worldStart, worldDown, 30f, ~0, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
         {
-            // Only trust a hit on our own generated geometry
-            if (hit.transform.IsChildOf(root))
-                return root.InverseTransformPoint(hit.point).y;
+            if (hit.transform.IsChildOf(root) && hit.transform.name.StartsWith("Floor_"))
+            {
+                height = root.InverseTransformPoint(hit.point).y;
+                return true;
+            }
         }
 
-        return fallback;
+        height = 0f;
+        return false;
     }
 
     // True if the spot is far enough from every pillar in this cell
@@ -676,52 +798,22 @@ public class LevelGenerator : MonoBehaviour
     // Builds one fragment in the chosen shape
     void SpawnFragment(int number, Vector3 localPos)
     {
-        GameObject go;
+        // A plain cube, the same as the other levels
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.transform.SetParent(root, false);
+        go.transform.localPosition = localPos;
+        go.transform.localScale = Vector3.one * fragmentSize;
+        go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
 
-        if (fragmentShape == FragmentShape.Prefab && fragmentPrefab != null)
-        {
-            go = Instantiate(fragmentPrefab, root);
-            go.transform.localPosition = localPos;
+        if (theme.collectibleMaterial != null)
+            go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
 
-            // Make sure it has a trigger collider to pick up
-            Collider col = go.GetComponentInChildren<Collider>();
-            if (col == null) col = go.AddComponent<SphereCollider>();
-            col.isTrigger = true;
-        }
-        else
-        {
-            go = GameObject.CreatePrimitive(ShapeToPrimitive(fragmentShape));
-            go.transform.SetParent(root, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = new Vector3(fragmentSize,
-                                                  fragmentSize * fragmentStretch,
-                                                  fragmentSize);
-
-            // Tilting a cube on two axes gives it a cut-crystal look
-            go.transform.localRotation = fragmentShape == FragmentShape.Crystal
-                ? Quaternion.Euler(45f, 45f, 0f)
-                : Quaternion.identity;
-
-            if (theme.collectibleMaterial != null)
-                go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
-
-            go.GetComponent<Collider>().isTrigger = true;
-        }
+        go.GetComponent<Collider>().isTrigger = true;
 
         go.name = "DreamFragment_" + number;
         if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();
     }
 
-    PrimitiveType ShapeToPrimitive(FragmentShape shape)
-    {
-        switch (shape)
-        {
-            case FragmentShape.Sphere: return PrimitiveType.Sphere;
-            case FragmentShape.Capsule: return PrimitiveType.Capsule;
-            case FragmentShape.Cylinder: return PrimitiveType.Cylinder;
-            default: return PrimitiveType.Cube; // Crystal is a tilted cube
-        }
-    }
 
     // --- Building blocks --------------------------------------------
 
@@ -729,7 +821,7 @@ public class LevelGenerator : MonoBehaviour
     void MakeFloor(string name, Vector3 center, Vector3 size)
     {
         Vector3 pos = center - new Vector3(0f, size.y * 0.5f, 0f);
-        GameObject go = MakeCube(name, pos, size, theme.floorMaterial);
+        GameObject go = MakeCube(name, pos, size, FloorMat());
         floorRenderers.Add(go.GetComponent<Renderer>());
     }
 
@@ -779,7 +871,7 @@ public class LevelGenerator : MonoBehaviour
         CubeFace face = GetComponent<CubeFace>();
         if (face == null) return;
 
-        face.colorRenderers = floorRenderers.ToArray();
+        face.colorRenderers = new Renderer[0];
         face.ApplyColor();
     }
 

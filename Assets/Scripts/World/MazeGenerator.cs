@@ -44,15 +44,11 @@ public class MazeGenerator : MonoBehaviour
     [Header("Fragments")]
     [Tooltip("How high above the floor fragments hover.")]
     public float fragmentHeight = 1f;
-    [Tooltip("Optional. A model to use instead of a plain crystal.")]
-    public GameObject fragmentPrefab;
     public float fragmentSize = 0.6f;
 
     [Header("Altar")]
     public float altarSize = 1.4f;
     public float altarTriggerRadius = 2f;
-    [Tooltip("Optional. A model to use instead of a plain block.")]
-    public GameObject altarPrefab;
 
     const string GeneratedName = "Generated";
 
@@ -533,18 +529,11 @@ public class MazeGenerator : MonoBehaviour
     {
         GameObject obj;
 
-        if (altarPrefab != null)
-        {
-            obj = Instantiate(altarPrefab, root);
-            obj.transform.localPosition = position;
-        }
-        else
-        {
-            obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            obj.transform.SetParent(root, false);
-            obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
-            obj.transform.localScale = Vector3.one * altarSize;
-        }
+        obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        obj.transform.SetParent(root, false);
+        obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
+        obj.transform.localScale = Vector3.one * altarSize;
+    
 
         obj.name = "DreamAltar";
 
@@ -609,28 +598,17 @@ public class MazeGenerator : MonoBehaviour
     {
         GameObject go;
 
-        if (fragmentPrefab != null)
-        {
-            go = Instantiate(fragmentPrefab, root);
-            go.transform.localPosition = localPos;
+        go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.transform.SetParent(root, false);
+        go.transform.localPosition = localPos;
+        go.transform.localScale = Vector3.one * fragmentSize;
+        go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
 
-            Collider col = go.GetComponentInChildren<Collider>();
-            if (col == null) col = go.AddComponent<SphereCollider>();
-            col.isTrigger = true;
-        }
-        else
-        {
-            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.transform.SetParent(root, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = Vector3.one * fragmentSize;
-            go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
+        if (theme.collectibleMaterial != null)
+            go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
 
-            if (theme.collectibleMaterial != null)
-                go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
-
-            go.GetComponent<Collider>().isTrigger = true;
-        }
+        go.GetComponent<Collider>().isTrigger = true;
+    
 
         go.name = "DreamFragment_" + number;
         if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();

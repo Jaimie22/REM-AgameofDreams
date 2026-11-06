@@ -112,6 +112,5 @@ public class LevelObjectives : MonoBehaviour
         Debug.Log("The door of light appears.");
         if (active != null && active.door != null) active.door.SetActive(true);
 
-        PlayerAudio.PlayDoorSound();
     }
 }

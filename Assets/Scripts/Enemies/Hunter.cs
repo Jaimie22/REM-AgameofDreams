@@ -31,10 +31,6 @@ public class Hunter : MonoBehaviour
     [Tooltip("If it ever ends up further than this from where it should be, it's put back on its cell, so it can't drift off the map.")]
     public float maxStrayDistance = 6f;
 
-    [Header("Tension")]
-    [Range(0f, 1f)] public float wanderingTension = 0.15f;
-    [Range(0f, 1f)] public float trackingTension = 0.4f;
-    [Range(0f, 1f)] public float chasingTension = 0.85f;
 
     [Header("Memory")]
     [Tooltip("Seconds it keeps heading for where it last saw him.")]
@@ -62,7 +58,6 @@ public class Hunter : MonoBehaviour
     [HideInInspector] public int faceIndex = 2;
 
     MazeGenerator maze;
-    HunterAudio hunterAudio;
 
     int cellX, cellY;          // the cell it's standing in
     int nextX, nextY;          // the cell it's walking towards
@@ -70,16 +65,9 @@ public class Hunter : MonoBehaviour
     bool hasHome;
     bool moving;
 
-    // The sounds the maze's theme gives it
-    public LevelTheme Theme => maze != null ? maze.theme : null;
-
     void Awake()
     {
         StopRootMotion();
-
-        // Added here so the prefab needs no setup
-        hunterAudio = GetComponent<HunterAudio>();
-        if (hunterAudio == null) hunterAudio = gameObject.AddComponent<HunterAudio>();
     }
 
     void Start()
@@ -138,7 +126,6 @@ public class Hunter : MonoBehaviour
 
         StepTowardsNextCell();
         KeepOnPath();
-        FeedTension();
     }
 
     // --- Navigation -------------------------------------------------
@@ -479,28 +466,10 @@ public class Hunter : MonoBehaviour
         return false;
     }
 
-    void FeedTension()
-    {
-        if (HeartbeatSystem.Instance == null) return;
-
-        float tension = CurrentState switch
-        {
-            State.Chasing => chasingTension,
-            State.Tracking => trackingTension,
-            _ => wanderingTension
-        };
-
-        HeartbeatSystem.Instance.SetTension(tension);
-    }
-
     // Sends the player back to the start of the maze
     void Catch(CubeWorld world)
     {
         Debug.Log("It found you.");
-
-        // The lunge, then the player's own reaction
-        hunterAudio.PlayAttack();
-        world.player.Audio.PlayDeath();
 
         // It costs the player a heart
         world.player.Vitals.TakeDamage();

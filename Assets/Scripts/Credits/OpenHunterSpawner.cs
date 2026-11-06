@@ -8,8 +8,6 @@ using UnityEngine;
 public class OpenHunterSpawner : MonoBehaviour
 {
     [Header("The Hunters")]
-    [Tooltip("The same hunter prefab used on the maze level.")]
-    public GameObject hunterPrefab;
     [Tooltip("How many wade across the pool.")]
     [Range(1, 8)] public int hunterCount = 4;
     public int faceIndex = 5;
@@ -61,7 +59,6 @@ public class OpenHunterSpawner : MonoBehaviour
 
     public void SpawnHunters()
     {
-        if (hunterPrefab == null) return;
 
         CubeFace face = GetComponent<CubeFace>();
         if (face == null || face.levelContent == null) return;
@@ -121,9 +118,29 @@ public class OpenHunterSpawner : MonoBehaviour
                              ". Try a smaller Clear Of Spawn.");
     }
 
+    // A plain red capsule
+    GameObject MakePlaceholder(Transform parent)
+    {
+        GameObject hunter = new GameObject("Hunter");
+        hunter.transform.SetParent(parent, false);
+
+        GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Body";
+        body.transform.SetParent(hunter.transform, false);
+        body.transform.localPosition = Vector3.up * 0.9f;
+        body.transform.localScale = new Vector3(0.8f, 0.9f, 0.8f);
+        Destroy(body.GetComponent<Collider>());
+
+        Renderer rend = body.GetComponent<Renderer>();
+        rend.material.SetColor("_BaseColor", new Color(0.7f, 0.12f, 0.12f));
+        rend.material.SetColor("_Color", new Color(0.7f, 0.12f, 0.12f));
+
+        return hunter;
+    }
+
     void BuildHunter(Transform parent, Vector3 spot, int number)
     {
-        GameObject hunter = Instantiate(hunterPrefab, parent);
+        GameObject hunter = MakePlaceholder(parent);
         hunter.name = HunterName + "_" + number;
         hunter.transform.localPosition = spot;
         hunter.transform.localRotation = Quaternion.identity;

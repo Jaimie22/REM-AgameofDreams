@@ -184,7 +184,6 @@ public class OpenHunter : MonoBehaviour
         Debug.Log("It caught him at the water's edge.");
 
         // It costs the player a heart, the same as the maze hunter
-        world.player.Audio.PlayDeath();
         world.player.Vitals.TakeDamage();
 
         CubeFace cubeFace = world.faces[world.CurrentFaceIndex];

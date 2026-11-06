@@ -164,7 +164,6 @@ public class DigPuzzle : MonoBehaviour
         cell.dug = true;
         DugCount++;
 
-        PlayerAudio.PlayDigSound();
 
         if (cell.grass != null) cell.grass.SetActive(false);
 
@@ -232,7 +231,6 @@ public class DigPuzzle : MonoBehaviour
         flowing = true;
         Debug.Log("The sea finds the channel.");
 
-        PlayerAudio.StartWaterFlowSound();
 
         // The list is in flood order, so this reads as water travelling
         foreach (DigCell cell in order)
@@ -252,14 +250,12 @@ public class DigPuzzle : MonoBehaviour
         }
 
         // The vat is full, so the water settles
-        PlayerAudio.StopWaterFlowSound();
 
         yield return new WaitForSeconds(doorDelay);
 
         Debug.Log("The vat overflows. The door of light appears.");
         if (door != null) door.SetActive(true);
 
-        PlayerAudio.PlayDoorSound();
 
         finished = true;
         flowing = false;

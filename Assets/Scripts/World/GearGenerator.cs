@@ -41,12 +41,6 @@ public class GearGenerator : MonoBehaviour
     public float pegGearHeight = 0.5f;
     public float pegHeight = 0.7f;
 
-    [Header("Gear Model (optional)")]
-    [Tooltip("Your own gear model. Leave empty to use the built-in gear. It should lie flat, with its axle pointing up.")]
-    public GameObject gearPrefab;
-    [Tooltip("The model's radius to the tips of its teeth, at scale 1. Every gear is scaled from this, so measure it if the teeth don't line up.")]
-    public float gearPrefabRadius = 1f;
-
     [Header("Loose Gears")]
     [Tooltip("Extra gears with no peg to call their own. They can be swapped in, but can't be relied on.")]
     public int decoyCount = 4;
@@ -70,23 +64,6 @@ public class GearGenerator : MonoBehaviour
     public int pillarCount = 8;
     public Vector2 pillarSize = new Vector2(1.2f, 1.8f);
     public float pillarHeight = 3f;
-
-    [Header("Atmosphere")]
-    [Tooltip("Adds the steampunk lamps, steam vents, chimney smoke and pipes. Tune them on the GearAtmosphere component.")]
-    public bool addAtmosphere = true;
-
-    [Header("Sounds")]
-    [Tooltip("Fitting a gear onto a peg. Also played, quietly, when one is put on the floor.")]
-    public AudioClip placeClip;
-    [Tooltip("A new gear joins the chain.")]
-    public AudioClip meshClip;
-    [Tooltip("The whole chain meshes and the machine starts.")]
-    public AudioClip startClip;
-    [Tooltip("The cage sinking into the floor.")]
-    public AudioClip cageClip;
-    [Tooltip("A puff of steam from a vent.")]
-    public AudioClip steamClip;
-    [Range(0f, 1f)] public float steamVolume = 0.6f;
 
     [Header("Colours (used when no material is assigned)")]
     public Color floorColor = new Color(0.28f, 0.27f, 0.3f);
@@ -165,11 +142,6 @@ public class GearGenerator : MonoBehaviour
         puzzle = GetComponent<GearPuzzle>();
         if (puzzle == null) puzzle = gameObject.AddComponent<GearPuzzle>();
 
-        puzzle.placeClip = placeClip;
-        puzzle.meshClip = meshClip;
-        puzzle.startClip = startClip;
-        puzzle.cageClip = cageClip;
-
         // Pick the sizes first. The machine is built around them, so it always works.
         float[] needed = PickGearSizes();
 
@@ -184,20 +156,6 @@ public class GearGenerator : MonoBehaviour
 
         List<GearPiece> loose = ScatterGears(needed);
         PlaceSpawn();
-
-        // Lamps, steam and smoke, so it feels like a working factory
-        if (addAtmosphere)
-        {
-            GearAtmosphere atmosphere = GetComponent<GearAtmosphere>();
-            if (atmosphere == null) atmosphere = gameObject.AddComponent<GearAtmosphere>();
-
-            atmosphere.steamClip = steamClip;
-            atmosphere.steamVolume = steamVolume;
-
-            atmosphere.Build(root, floorHeight, half, machineZ,
-                             motor.transform.localPosition, output.transform.localPosition,
-                             pillarSpots, floorHeight + pillarHeight);
-        }
 
         float cageDrop = cageHeight + 0.5f;
         puzzle.SetUp(motor, pegs, output, loose, cage, cageDrop,
@@ -286,25 +244,6 @@ public class GearGenerator : MonoBehaviour
         gear.transform.localPosition = localPos;
 
         // A model, if one has been given, instead of the built-in disc and teeth
-        if (gearPrefab != null)
-        {
-            GameObject model = Instantiate(gearPrefab, gear.transform);
-            model.name = "Model";
-            model.transform.localPosition = Vector3.zero;
-            model.transform.localRotation = Quaternion.identity;
-
-            // Sized so the teeth reach exactly this radius, which is what makes them mesh
-            model.transform.localScale = Vector3.one * (radius / Mathf.Max(0.01f, gearPrefabRadius));
-
-            // Gears are never solid, so nothing catches the player or blocks the pegs
-            foreach (Collider col in model.GetComponentsInChildren<Collider>())
-                SafeDestroy(col);
-
-            GearPiece modelPiece = gear.AddComponent<GearPiece>();
-            modelPiece.radius = radius;
-            return modelPiece;
-        }
-
         float toothDepth = 0.3f;
         float bodyRadius = Mathf.Max(0.2f, radius - toothDepth);
 
