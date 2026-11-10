@@ -1,16 +1,15 @@
-using TMPro;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
+using TMPro;
 
 // The settings shown on the television. Saves what the player chooses,
 // and applies it again next time the game starts.
 public class GameSettings : MonoBehaviour
 {
     [Header("Audio")]
-    [Tooltip("Optional. An Audio Mixer with exposed Master, Music and SFX volume parameters.")]
+    [Tooltip("The Audio Mixer holding the Music and SFX groups.")]
     public AudioMixer mixer;
-    public Slider masterSlider;
     public Slider musicSlider;
     public Slider sfxSlider;
 
@@ -24,7 +23,6 @@ public class GameSettings : MonoBehaviour
     [Tooltip("The menu to return to. Leave empty to find it.")]
     public MainMenu mainMenu;
 
-    const string MasterKey = "Volume_Master";
     const string MusicKey = "Volume_Music";
     const string SfxKey = "Volume_SFX";
     const string FullscreenKey = "Display_Fullscreen";
@@ -48,19 +46,21 @@ public class GameSettings : MonoBehaviour
 
     void SetUpAudio()
     {
-        HookSlider(masterSlider, MasterKey, 0.8f, SetMasterVolume);
-        HookSlider(musicSlider, MusicKey, 0.7f, SetMusicVolume);
-        HookSlider(sfxSlider, SfxKey, 0.8f, SetSfxVolume);
+        HookSlider(musicSlider, MusicKey, 0.7f, "MusicVolume");
+        HookSlider(sfxSlider, SfxKey, 0.8f, "SFXVolume");
     }
 
     // Loads the saved value, applies it, and listens for changes
-    void HookSlider(Slider slider, string key, float fallback,
-                    UnityEngine.Events.UnityAction<float> apply)
+    void HookSlider(Slider slider, string saveKey, float fallback, string mixerParameter)
     {
-        float saved = PlayerPrefs.GetFloat(key, fallback);
-        apply(saved);
+        float saved = PlayerPrefs.GetFloat(saveKey, fallback);
+        Apply(mixerParameter, saved);
 
-        if (slider == null) return;
+        if (slider == null)
+        {
+            Debug.LogWarning("GameSettings: no slider assigned for " + mixerParameter);
+            return;
+        }
 
         slider.minValue = 0f;
         slider.maxValue = 1f;
@@ -68,40 +68,20 @@ public class GameSettings : MonoBehaviour
 
         slider.onValueChanged.AddListener(value =>
         {
-            apply(value);
-            PlayerPrefs.SetFloat(key, value);
+            Apply(mixerParameter, value);
+            PlayerPrefs.SetFloat(saveKey, value);
             PlayerPrefs.Save();
         });
     }
 
-    public void SetMasterVolume(float value)
-    {
-        // Without a mixer, fall back to Unity's global volume
-        if (mixer == null)
-        {
-            AudioListener.volume = value;
-            return;
-        }
-
-        mixer.SetFloat("MasterVolume", ToDecibels(value));
-    }
-
-    public void SetMusicVolume(float value)
-    {
-        if (mixer != null) mixer.SetFloat("MusicVolume", ToDecibels(value));
-    }
-
-    public void SetSfxVolume(float value)
-    {
-        if (mixer != null) mixer.SetFloat("SFXVolume", ToDecibels(value));
-    }
-
     // Sliders run 0 to 1, but mixers work in decibels, which are logarithmic.
     // This makes the slider feel even across its whole range.
-    float ToDecibels(float value)
+    void Apply(string parameter, float value)
     {
-        if (value <= 0.0001f) return -80f;      // silent
-        return Mathf.Log10(value) * 20f;
+        if (mixer == null) return;
+
+        float decibels = value <= 0.0001f ? -80f : Mathf.Log10(value) * 20f;
+        mixer.SetFloat(parameter, decibels);
     }
 
     // --- Resolution -------------------------------------------------
@@ -122,7 +102,6 @@ public class GameSettings : MonoBehaviour
         {
             names.Add(resolutions[i].width + " x " + resolutions[i].height);
 
-            // Remember which one matches the window right now
             if (resolutions[i].width == Screen.width &&
                 resolutions[i].height == Screen.height)
                 current = i;

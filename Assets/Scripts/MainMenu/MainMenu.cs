@@ -51,8 +51,6 @@ public class MainMenu : MonoBehaviour
         StartCoroutine(FadeIn());
     }
 
-    // --- Building ---------------------------------------------------
-
     void BuildMenu()
     {
         GameObject canvasObj = new GameObject("MenuCanvas");
@@ -130,6 +128,21 @@ public class MainMenu : MonoBehaviour
         colors.fadeDuration = 0.15f;
         button.colors = colors;
 
+        // The little noises the menu makes
+        UnityEngine.EventSystems.EventTrigger trigger =
+            obj.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+
+        UnityEngine.EventSystems.EventTrigger.Entry enter =
+            new UnityEngine.EventSystems.EventTrigger.Entry
+            {
+                eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter
+            };
+
+        enter.callback.AddListener(_ => MenuAudio.Instance?.PlayHover());
+        trigger.triggers.Add(enter);
+
+        button.onClick.AddListener(() => MenuAudio.Instance?.PlayPress());
+
         return text;
     }
 
@@ -147,8 +160,6 @@ public class MainMenu : MonoBehaviour
         group.interactable = true;
         group.blocksRaycasts = true;
     }
-
-    // --- The options ------------------------------------------------
 
     void NewGame()
     {
