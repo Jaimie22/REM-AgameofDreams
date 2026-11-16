@@ -38,6 +38,7 @@ AudioMixerController:
     name: SFXVolume
   m_AudioMixerGroupViews:
   - guids:
+    - 0a8dbf4f09968f448b1ba48b048f8c62
     - 3c034e41da50b3d4da62cc34a81fa891
     - dd265d708c0694448a35d8b6f97e1b1a
     name: View
@@ -95,7 +96,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SFXVolume
+  m_Name: SFX
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: dd265d708c0694448a35d8b6f97e1b1a
   m_Children: []
@@ -114,7 +115,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MusicVolume
+  m_Name: Music
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 3c034e41da50b3d4da62cc34a81fa891
   m_Children: []

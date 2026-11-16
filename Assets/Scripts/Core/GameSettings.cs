@@ -8,8 +8,9 @@ using TMPro;
 public class GameSettings : MonoBehaviour
 {
     [Header("Audio")]
-    [Tooltip("The Audio Mixer holding the Music and SFX groups.")]
+    [Tooltip("The Audio Mixer holding the Master, Music and SFX groups.")]
     public AudioMixer mixer;
+    public Slider masterSlider;
     public Slider musicSlider;
     public Slider sfxSlider;
 
@@ -23,6 +24,7 @@ public class GameSettings : MonoBehaviour
     [Tooltip("The menu to return to. Leave empty to find it.")]
     public MainMenu mainMenu;
 
+    const string MasterKey = "Volume_Master";
     const string MusicKey = "Volume_Music";
     const string SfxKey = "Volume_SFX";
     const string FullscreenKey = "Display_Fullscreen";
@@ -46,6 +48,8 @@ public class GameSettings : MonoBehaviour
 
     void SetUpAudio()
     {
+        // Each slider carries its own mixer parameter, so they can't cross over
+        HookSlider(masterSlider, MasterKey, 0.8f, "MasterVolume");
         HookSlider(musicSlider, MusicKey, 0.7f, "MusicVolume");
         HookSlider(sfxSlider, SfxKey, 0.8f, "SFXVolume");
     }
@@ -81,7 +85,9 @@ public class GameSettings : MonoBehaviour
         if (mixer == null) return;
 
         float decibels = value <= 0.0001f ? -80f : Mathf.Log10(value) * 20f;
-        mixer.SetFloat(parameter, decibels);
+
+        if (!mixer.SetFloat(parameter, decibels))
+            Debug.LogWarning("GameSettings: the mixer has no parameter called " + parameter);
     }
 
     // --- Resolution -------------------------------------------------
