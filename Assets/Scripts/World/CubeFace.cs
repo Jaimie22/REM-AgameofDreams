@@ -121,8 +121,59 @@ public class CubeFace : MonoBehaviour
         // Unlocking: it's left on and Update thins it away
     }
 
+    // --- Finished-level crystal, shown above the face in the cube view ---
+
+    GameObject beacon;
+    Material beaconMat;
+    bool completed, beaconVisible;
+    float beaconAmount;
+    public bool IsCompleted { get { return completed; } }
+
+    static readonly Vector3 BeaconSize = new Vector3(2f, 5f, 2f);
+
+    public void SetCompleted(bool done, Color tint)
+    {
+        completed = done;
+        if (!done) return;
+
+        if (beacon == null)
+        {
+            beaconMat = CrystalKit.Make(tint, 0.55f);
+            beacon = CrystalKit.Pillar("CompletedCrystal", beaconMat, Vector3.zero, transform);
+            beacon.SetActive(false);
+        }
+        else
+        {
+            CrystalKit.SetTint(beaconMat, tint, 0.55f);
+        }
+    }
+
+    // Only shown while the cube or map is on screen
+    public void SetBeaconVisible(bool visible)
+    {
+        beaconVisible = visible;
+    }
+
+    void UpdateBeacon()
+    {
+        if (beacon == null) return;
+
+        float target = (completed && beaconVisible) ? 1f : 0f;
+        beaconAmount = Mathf.MoveTowards(beaconAmount, target, Time.unscaledDeltaTime / 0.8f);
+        beacon.SetActive(beaconAmount > 0.001f);
+        if (!beacon.activeSelf) return;
+
+        float grow = Mathf.SmoothStep(0f, 1f, beaconAmount);
+        float time = Time.unscaledTime;
+        beacon.transform.localPosition = Vector3.up * (6f + Mathf.Sin(time * 1.5f) * 0.3f);
+        beacon.transform.localRotation = Quaternion.Euler(12f, time * 40f, 12f);
+        beacon.transform.localScale = BeaconSize * grow;
+    }
+
     void Update()
     {
+        UpdateBeacon();
+
         if (fogRoot == null || !fogRoot.activeSelf) return;
 
         if (IsUnlocked)

@@ -187,6 +187,63 @@ public class DreamCamera : MonoBehaviour
         Cam = GetComponent<Camera>();
     }
 
+    [Header("Entry Animation Camera")]
+    [Tooltip("Seconds the camera takes to glide from the cube view to a level's entry animation view.")]
+    public float introBlendTime = 1.5f;
+
+    bool introPoseActive;
+    Vector3 introStartPosition;
+    Quaternion introStartRotation;
+    float introStartFov;
+    float introBlend;
+    Vector3 introPosition;
+    Quaternion introRotation;
+    float introFov;
+
+    // Holds the camera at a fixed viewpoint, until ClearIntroPose is called
+    public void SetIntroPose(Vector3 position, Quaternion rotation, float fov)
+    {
+        // The first time, remember where the camera is so it can glide from there
+        if (!introPoseActive)
+        {
+            introStartPosition = transform.position;
+            introStartRotation = transform.rotation;
+            introStartFov = Cam != null ? Cam.fieldOfView : fov;
+            introBlend = 0f;
+        }
+
+        introPoseActive = true;
+        introPosition = position;
+        introRotation = rotation;
+        introFov = fov;
+    }
+
+    public void ClearIntroPose()
+    {
+        introPoseActive = false;
+    }
+
+    // Lets go of the entry animation view and glides to the normal player camera
+    public void ClearIntroPose(float glideTime)
+    {
+        if (!introPoseActive) return;
+
+        introOutStartPosition = transform.position;
+        introOutStartRotation = transform.rotation;
+        introOutStartFov = Cam != null ? Cam.fieldOfView : 60f;
+        introOutTime = Mathf.Max(0.05f, glideTime);
+        introOutProgress = 0f;
+        introOutActive = true;
+        introPoseActive = false;
+    }
+
+    bool introOutActive;
+    Vector3 introOutStartPosition;
+    Quaternion introOutStartRotation;
+    float introOutStartFov;
+    float introOutTime;
+    float introOutProgress;
+
     // Switch to the cube overview
     public void SetOverview()
     {
@@ -260,6 +317,40 @@ public class DreamCamera : MonoBehaviour
             out Quaternion rotation,
             out float fov
         );
+
+        // A level's entry animation can hold the camera at its own viewpoint
+        if (introPoseActive)
+        {
+            // Glide there smoothly, then hold the view
+            introBlend = Mathf.Clamp01(introBlend + Time.unscaledDeltaTime / Mathf.Max(0.05f, introBlendTime));
+            float s = Mathf.SmoothStep(0f, 1f, introBlend);
+
+            position = Vector3.Lerp(introStartPosition, introPosition, s);
+            rotation = Quaternion.Slerp(introStartRotation, introRotation, s);
+            fov = Mathf.Lerp(introStartFov, introFov, s);
+
+            // Set it directly, so the normal camera smoothing doesn't add a second, lagging movement
+            transform.SetPositionAndRotation(position, rotation);
+            if (Cam != null) Cam.fieldOfView = fov;
+            moveVelocity = Vector3.zero;
+        }
+
+        // Gliding from the entry animation view to the player camera
+        if (introOutActive)
+        {
+            introOutProgress = Mathf.Clamp01(introOutProgress + Time.unscaledDeltaTime / introOutTime);
+            float s = Mathf.SmoothStep(0f, 1f, introOutProgress);
+
+            position = Vector3.Lerp(introOutStartPosition, position, s);
+            rotation = Quaternion.Slerp(introOutStartRotation, rotation, s);
+            fov = Mathf.Lerp(introOutStartFov, fov, s);
+
+            transform.SetPositionAndRotation(position, rotation);
+            if (Cam != null) Cam.fieldOfView = fov;
+            moveVelocity = Vector3.zero;
+
+            if (introOutProgress >= 1f) introOutActive = false;
+        }
 
         // Smoothly move towards the target camera position
         transform.position = Vector3.SmoothDamp(

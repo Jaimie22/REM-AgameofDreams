@@ -83,8 +83,20 @@ public class PlayerController : MonoBehaviour
         jumpHeight = newJumpHeight;
     }
 
+    // Shows or hides the player's model without turning the player off
+    public void SetVisible(bool visible)
+    {
+        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
+            r.enabled = visible;
+    }
+
+    // True while an entry animation plays, so the player can't move yet
+    [System.NonSerialized] public bool frozen;
+
     void Update()
     {
+        if (frozen) return;
+
         Vector2 input = ReadMoveInput();
 
         // Camera-relative directions, flattened onto the ground

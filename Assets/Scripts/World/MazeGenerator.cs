@@ -1,10 +1,11 @@
+using System.Collections;
 using UnityEngine;
 using System.Collections.Generic;
 
 // Builds a proper maze across a face: corridors carved through a grid,
 // with solid walls between them. Put this on a face instead of LevelGenerator.
 [RequireComponent(typeof(CubeFace))]
-public class MazeGenerator : MonoBehaviour
+public class MazeGenerator : MonoBehaviour, IFaceIntro
 {
     [Header("Theme")]
     [Tooltip("The LevelTheme asset holding this level's materials and settings.")]
@@ -44,15 +45,35 @@ public class MazeGenerator : MonoBehaviour
     [Header("Fragments")]
     [Tooltip("How high above the floor fragments hover.")]
     public float fragmentHeight = 1f;
-    [Tooltip("Optional. A model to use instead of a plain crystal.")]
-    public GameObject fragmentPrefab;
     public float fragmentSize = 0.6f;
 
     [Header("Altar")]
     public float altarSize = 1.4f;
     public float altarTriggerRadius = 2f;
-    [Tooltip("Optional. A model to use instead of a plain block.")]
-    public GameObject altarPrefab;
+
+    [Header("Entry Animation")]
+    [Tooltip("Crystal pillars circle above the maze, then fall and stretch into the walls.")]
+    public bool playEntryAnimation = true;
+    [Tooltip("Optional. The pillars' material. Leave empty for pale see-through crystal.")]
+    public Material crystalMaterial;
+    [Tooltip("Seconds the pillars circle before the first one falls.")]
+    public float orbitTime = 3.5f;
+    [Tooltip("Seconds from the first pillar falling to the last.")]
+    public float releaseDuration = 2.5f;
+    [Tooltip("Seconds one pillar takes to fall and stretch into its wall.")]
+    public float fallTime = 0.9f;
+    [Tooltip("How fast the pillars circle, in degrees a second.")]
+    public float orbitSpeed = 35f;
+    public float pillarWidth = 1.3f;
+    public float pillarHeight = 3.2f;
+    [Tooltip("How high the pillars float above the floor.")]
+    public float hoverHeight = 7f;
+    [Tooltip("Radius of the innermost ring. More rings are added outside it for more pillars.")]
+    public float ringStartRadius = 4f;
+    public float ringSpacing = 3f;
+    [Tooltip("The camera looks straight down from above the middle of the maze for the animation.")]
+    public float introFov = 55f;
+    public float introCameraMargin = 3f;
 
     const string GeneratedName = "Generated";
 
@@ -76,6 +97,7 @@ public class MazeGenerator : MonoBehaviour
 
     List<int> deadEnds = new List<int>();
     List<Renderer> floorRenderers = new List<Renderer>();
+    List<GameObject> wallObjects = new List<GameObject>();
 
     [ContextMenu("Generate Preview")]
     void GeneratePreview()
@@ -185,6 +207,7 @@ public class MazeGenerator : MonoBehaviour
         CarveMaze();
         OpenEntranceAndExit();
         BuildFloor();
+        wallObjects.Clear();
         BuildWalls();
         PlaceContents();
 
@@ -475,7 +498,198 @@ public class MazeGenerator : MonoBehaviour
 
         Vector3 size = new Vector3(right - left, wallHeight, front - back);
 
-        MakeCube("Wall_" + number, center, size, theme.wallMaterial);
+        wallObjects.Add(MakeCube("Wall_" + number, center, size, CrystalMat()));   // the same crystal as the pillars that build them
+    }
+
+    // --- Entry animation ----------------------------------------------
+
+    Material runtimeCrystalMat;
+
+    // Walls and hunters vanish the moment the level is chosen
+    public void HideForIntro()
+    {
+        if (!playEntryAnimation) return;
+
+        foreach (GameObject wall in wallObjects)
+            if (wall != null) wall.SetActive(false);
+
+        SetHuntersActive(false);
+    }
+
+    void SetHuntersActive(bool active)
+    {
+        Transform content = GetContent();
+        if (content == null) return;
+        foreach (Hunter h in content.GetComponentsInChildren<Hunter>(true))
+            h.gameObject.SetActive(active);
+    }
+
+    Material CrystalMat()
+    {
+        if (crystalMaterial != null) return crystalMaterial;
+        if (runtimeCrystalMat == null) runtimeCrystalMat = CrystalKit.Make(new Color(0.75f, 0.6f, 1f));
+        return runtimeCrystalMat;
+    }
+
+    // The middle of the maze, at floor level
+    Vector3 MazeCentre()
+    {
+        Vector3 a = CellPosition(0, 0, 0f);
+        Vector3 b = CellPosition(cellsWide - 1, cellsDeep - 1, 0f);
+        return (a + b) * 0.5f;
+    }
+
+    public IEnumerator PlayIntro(DreamCamera cam, Color tint, Color previousTint)
+    {
+        List<GameObject> walls = new List<GameObject>(wallObjects);
+        walls.RemoveAll(w => w == null);
+
+        if (!playEntryAnimation || walls.Count == 0)
+        {
+            SetHuntersActive(true);
+            yield break;
+        }
+
+        Vector3 centre = MazeCentre();
+        Vector3 startPos = CellPosition(startCellX, startCellY, 0f);
+
+        // Walls nearest the start fall first, so the maze builds outwards from where you begin
+        walls.Sort((a, b) =>
+            (a.transform.localPosition - startPos).sqrMagnitude
+            .CompareTo((b.transform.localPosition - startPos).sqrMagnitude));
+
+        int n = walls.Count;
+        Material crystal = CrystalMat();
+
+        // Where each wall ends up, and what it looks like once built
+        Vector3[] finalPos = new Vector3[n];
+        Vector3[] finalScale = new Vector3[n];
+        Material[] finalMat = new Material[n];
+        Collider[] cols = new Collider[n];
+        Renderer[] rends = new Renderer[n];
+
+        // Spread the pillars over rings around the middle, filling the inner ring first
+        float[] radius = new float[n];
+        float[] angle0 = new float[n];
+        float[] dir = new float[n];
+        int placed = 0, ring = 0;
+        while (placed < n)
+        {
+            float r = ringStartRadius + ring * ringSpacing;
+            int capacity = Mathf.Max(3, Mathf.FloorToInt(2f * Mathf.PI * r / (pillarWidth * 1.9f)));
+            int take = Mathf.Min(capacity, n - placed);
+            for (int j = 0; j < take; j++)
+            {
+                radius[placed + j] = r;
+                angle0[placed + j] = 360f * j / take + ring * 23f;
+                dir[placed + j] = (ring % 2 == 0) ? 1f : -1f;   // neighbouring rings turn opposite ways
+            }
+            placed += take;
+            ring++;
+        }
+
+        Vector3 pillarScale = new Vector3(pillarWidth, pillarHeight, pillarWidth);
+        for (int i = 0; i < n; i++)
+        {
+            GameObject w = walls[i];
+            finalPos[i] = w.transform.localPosition;
+            finalScale[i] = w.transform.localScale;
+            rends[i] = w.GetComponent<Renderer>();
+            cols[i] = w.GetComponent<Collider>();
+            finalMat[i] = rends[i] != null ? rends[i].sharedMaterial : null;
+
+            if (rends[i] != null) rends[i].sharedMaterial = crystal;
+            if (cols[i] != null) cols[i].enabled = false;
+            w.transform.localScale = Vector3.zero;
+            w.SetActive(true);
+        }
+
+        // The camera hangs straight above the middle of the maze, high enough to see all of it and the crystals
+        float outerRing = ringStartRadius + Mathf.Max(0, ring - 1) * ringSpacing;
+        float ext = Mathf.Max(faceSize * 0.5f, outerRing) + introCameraMargin;
+        float aspect = (cam != null && cam.Cam != null) ? cam.Cam.aspect : 16f / 9f;
+        Vector3 centreWorld = root.TransformPoint(centre);
+        CrystalKit.TopDownPose(centreWorld, root.up, root.forward, ext, ext, introFov, aspect,
+                               out Vector3 camWorld, out Quaternion camRot);
+
+        Vector3[] releasePos = new Vector3[n];
+        Quaternion[] releaseRot = new Quaternion[n];
+        Vector3[] releaseScale = new Vector3[n];
+        bool[] released = new bool[n];
+        bool[] landed = new bool[n];
+        int landedCount = 0;
+
+        float t = 0f;
+        while (landedCount < n)
+        {
+            t += Time.deltaTime;
+
+            // The crystals start in the colour of the level before and settle into this level's colour
+            if (crystalMaterial == null)
+                CrystalKit.SetTint(crystal, Color.Lerp(previousTint, tint, Mathf.Clamp01(t / (orbitTime + releaseDuration))));
+
+            if (cam != null) cam.SetIntroPose(camWorld, camRot, introFov);
+
+            float appear = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 1f));
+
+            for (int i = 0; i < n; i++)
+            {
+                if (landed[i]) continue;
+                Transform wt = walls[i].transform;
+
+                float releaseAt = orbitTime + (n > 1 ? releaseDuration * i / (n - 1) : 0f);
+
+                // Circling, with a gentle bob and a slow turn
+                float angle = (angle0[i] + dir[i] * orbitSpeed * Mathf.Min(t, releaseAt)) * Mathf.Deg2Rad;
+                float bob = Mathf.Sin(Mathf.Min(t, releaseAt) * 2f + i) * 0.25f;
+                Vector3 orbitPos = centre + new Vector3(Mathf.Cos(angle) * radius[i],
+                                                        hoverHeight + bob - (1f - appear) * 3f,
+                                                        Mathf.Sin(angle) * radius[i]);
+                Quaternion orbitRot = Quaternion.Euler(0f, Mathf.Min(t, releaseAt) * 30f + i * 20f, 0f);
+                Vector3 orbitScale = pillarScale * appear;
+
+                if (t < releaseAt)
+                {
+                    wt.localPosition = orbitPos;
+                    wt.localRotation = orbitRot;
+                    wt.localScale = orbitScale;
+                    continue;
+                }
+
+                // Leave the ring, remembering where it was
+                if (!released[i])
+                {
+                    released[i] = true;
+                    releasePos[i] = orbitPos;
+                    releaseRot[i] = orbitRot;
+                    releaseScale[i] = orbitScale;
+                }
+
+                // Fall to the wall's place while stretching out to its shape
+                float u = Mathf.Clamp01((t - releaseAt) / Mathf.Max(0.1f, fallTime));
+                float fall = u * u;
+                wt.localPosition = Vector3.Lerp(releasePos[i], finalPos[i], fall);
+                wt.localRotation = Quaternion.Slerp(releaseRot[i], Quaternion.identity, fall);
+                wt.localScale = Vector3.Lerp(releaseScale[i], finalScale[i], Mathf.SmoothStep(0f, 1f, u));
+
+                if (u >= 1f)
+                {
+                    wt.localPosition = finalPos[i];
+                    wt.localRotation = Quaternion.identity;
+                    wt.localScale = finalScale[i];
+                    if (rends[i] != null) rends[i].sharedMaterial = finalMat[i];
+                    if (cols[i] != null) cols[i].enabled = true;
+                    landed[i] = true;
+                    landedCount++;
+                }
+            }
+
+            yield return null;
+        }
+
+        Physics.SyncTransforms();
+        // The camera is released by whoever brings the player in, so it can glide to the player camera
+        SetHuntersActive(true);
     }
 
     // --- Contents ---------------------------------------------------
@@ -533,18 +747,11 @@ public class MazeGenerator : MonoBehaviour
     {
         GameObject obj;
 
-        if (altarPrefab != null)
-        {
-            obj = Instantiate(altarPrefab, root);
-            obj.transform.localPosition = position;
-        }
-        else
-        {
-            obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            obj.transform.SetParent(root, false);
-            obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
-            obj.transform.localScale = Vector3.one * altarSize;
-        }
+        obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        obj.transform.SetParent(root, false);
+        obj.transform.localPosition = position + Vector3.up * altarSize * 0.5f;
+        obj.transform.localScale = Vector3.one * altarSize;
+    
 
         obj.name = "DreamAltar";
 
@@ -609,28 +816,17 @@ public class MazeGenerator : MonoBehaviour
     {
         GameObject go;
 
-        if (fragmentPrefab != null)
-        {
-            go = Instantiate(fragmentPrefab, root);
-            go.transform.localPosition = localPos;
+        go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.transform.SetParent(root, false);
+        go.transform.localPosition = localPos;
+        go.transform.localScale = Vector3.one * fragmentSize;
+        go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
 
-            Collider col = go.GetComponentInChildren<Collider>();
-            if (col == null) col = go.AddComponent<SphereCollider>();
-            col.isTrigger = true;
-        }
-        else
-        {
-            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.transform.SetParent(root, false);
-            go.transform.localPosition = localPos;
-            go.transform.localScale = Vector3.one * fragmentSize;
-            go.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
+        if (theme.collectibleMaterial != null)
+            go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
 
-            if (theme.collectibleMaterial != null)
-                go.GetComponent<Renderer>().sharedMaterial = theme.collectibleMaterial;
-
-            go.GetComponent<Collider>().isTrigger = true;
-        }
+        go.GetComponent<Collider>().isTrigger = true;
+    
 
         go.name = "DreamFragment_" + number;
         if (go.GetComponent<DreamFragment>() == null) go.AddComponent<DreamFragment>();

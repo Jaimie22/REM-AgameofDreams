@@ -61,6 +61,29 @@ public class CubeWorld : MonoBehaviour
     [Tooltip("Seconds it takes the cube to turn a face to the top.")]
     public float faceTurnDuration = 1.2f;
 
+    [Header("Crystals")]
+    [Tooltip("Each level's entry animation can play, with crystals building the level.")]
+    public bool entryAnimations = true;
+    [Tooltip("The colour of the crystals in each level, in level order. The crystals start in the colour of the level before and settle into the new one.")]
+    public Color[] crystalTints = new Color[]
+    {
+        new Color(0.70f, 0.80f, 1.00f),   // Level 1, pale blue
+        new Color(1.00f, 0.85f, 0.50f),   // Level 2, desert gold
+        new Color(0.75f, 0.60f, 1.00f),   // Level 3, violet
+        new Color(1.00f, 0.65f, 0.35f),   // Level 4, copper
+        new Color(0.55f, 1.00f, 0.85f),   // Level 5, soft teal
+        new Color(1.00f, 0.95f, 0.85f)    // Level 6, warm white
+    };
+
+    [Tooltip("Seconds the camera takes to glide from the overhead view to the player camera as the player arrives.")]
+    public float arrivalCameraTime = 1.6f;
+
+    Color TintOf(int index)
+    {
+        if (crystalTints == null || crystalTints.Length == 0) return new Color(0.7f, 0.8f, 1f);
+        return crystalTints[Mathf.Clamp(index, 0, crystalTints.Length - 1)];
+    }
+
     [Header("Safety")]
     [Tooltip("If the player falls this far below the face, they respawn.")]
     public float fallResetDistance = 10f;
@@ -144,10 +167,92 @@ public class CubeWorld : MonoBehaviour
         int startIndex = Mathf.Clamp(startLevel - 1, 0, faces.Length - 1);
         highestUnlocked = startIndex;
 
+        SetUpEntryAnimations();
+
+        // Every level before the one we're starting on counts as finished, so it shows its crystal
+        for (int i = 0; i < startIndex; i++)
+            faces[i].SetCompleted(true, TintOf(i));
+
         for (int i = 0; i < faces.Length; i++)
             faces[i].SetUnlocked(unlockAllFaces || i <= highestUnlocked);
 
         StartCoroutine(StartSequence(startIndex));
+    }
+
+    // Gives every level without its own entry animation the crystal one, in a style that suits it
+    void SetUpEntryAnimations()
+    {
+        if (!entryAnimations) return;
+
+        foreach (CubeFace face in faces)
+        {
+            if (face == null || face.GetComponent<IFaceIntro>() != null) continue;
+
+            GenericFaceIntro intro = face.gameObject.AddComponent<GenericFaceIntro>();
+
+            if (face.GetComponent<BiomeGenerator>() != null) intro.style = GenericFaceIntro.Style.Rain;
+            else if (face.GetComponent<GearGenerator>() != null) intro.style = GenericFaceIntro.Style.Helix;
+            else if (face.GetComponent<PlatformGenerator>() != null) intro.style = GenericFaceIntro.Style.Float;
+            else if (face.GetComponent<AwakeningGenerator>() != null) intro.style = GenericFaceIntro.Style.Outward;
+            else intro.style = GenericFaceIntro.Style.Arc;
+        }
+    }
+
+    // A crystal drops onto the start and breaks open, and the player steps out of it.
+    // The camera glides from the overhead view to the player camera while it happens.
+    IEnumerator PlayerArrival(Color tint)
+    {
+        Transform ground = player.transform;
+        Vector3 up = faces[CurrentFaceIndex].transform.up;
+        Vector3 size = new Vector3(0.9f, 2.4f, 0.9f);
+
+        Material mat = CrystalKit.Make(tint, 0.6f);
+        Transform crystal = CrystalKit.Pillar("SpawnCrystal", mat, size).transform;
+
+        Vector3 landing = ground.position + up * 1.3f;
+        Vector3 top = landing + up * 12f;
+
+        // The camera starts heading for the player as the crystal starts to fall
+        dreamCamera.ClearIntroPose(arrivalCameraTime);
+
+        float fall = 0.9f;
+        for (float t = 0f; t < fall; t += Time.deltaTime)
+        {
+            float u = t / fall;
+            crystal.position = Vector3.Lerp(top, landing, u * u);
+            crystal.rotation = Quaternion.AngleAxis(u * 540f, up);
+            yield return null;
+        }
+        crystal.position = landing;
+
+        // It breaks open: the crystal shrinks away and the player grows into place
+        Vector3 playerScale = ground.localScale;
+        player.SetVisible(true);
+
+        float open = 0.5f;
+        for (float t = 0f; t < open; t += Time.deltaTime)
+        {
+            float p = t / open;
+            float k = p - 1f;
+            float back = 1f + 2.70158f * k * k * k + 1.70158f * k * k;   // eases past full size, then settles
+
+            crystal.localScale = size * (1f - p);
+            crystal.rotation = Quaternion.AngleAxis(540f + p * 360f, up);
+            ground.localScale = playerScale * Mathf.Max(0.01f, back);
+            yield return null;
+        }
+
+        ground.localScale = playerScale;
+        Destroy(crystal.gameObject);
+        Destroy(mat);
+    }
+
+    // The finished-level crystals show above the faces while the cube or map is on screen
+    void UpdateBeacons()
+    {
+        bool show = CurrentMode == Mode.Overview || CurrentMode == Mode.Map;
+        foreach (CubeFace face in faces)
+            if (face != null) face.SetBeaconVisible(show);
     }
 
     // Builds (or rebuilds) one face's layout, whichever generator it uses
@@ -232,6 +337,8 @@ public class CubeWorld : MonoBehaviour
     void Update()
     {
         UpdateMusic();
+
+        UpdateBeacons();
 
         if (CurrentMode == Mode.Transitioning) return;
 
@@ -405,6 +512,10 @@ public class CubeWorld : MonoBehaviour
         transform.rotation = Quaternion.Inverse(face.transform.localRotation);
         Physics.SyncTransforms();
 
+        // A level with an entry animation starts empty, and builds itself in front of you
+        IFaceIntro intro = entryAnimations ? face.GetComponent<IFaceIntro>() : null;
+        if (intro != null) intro.HideForIntro();
+
         // The game opens inside a level, not in the cube view
         backgroundGradient?.SetVisible(false);
         dreamerBackdrop?.SetVisible(false);
@@ -425,8 +536,23 @@ public class CubeWorld : MonoBehaviour
 
         yield return null; // let one frame settle before revealing
 
-        CurrentMode = Mode.Playing;
-        yield return screenFader.Fade(1f, 0f, startFadeDuration);
+        if (intro != null)
+        {
+            // Fade in from black while the crystals gather, and keep control until the level is built
+            player.frozen = true;
+            player.SetVisible(false);
+            StartCoroutine(screenFader.Fade(1f, 0f, startFadeDuration));
+            Color tint = TintOf(index);
+            yield return StartCoroutine(intro.PlayIntro(dreamCamera, tint, TintOf(Mathf.Max(0, index - 1))));
+            yield return StartCoroutine(PlayerArrival(tint));
+            player.frozen = false;
+            CurrentMode = Mode.Playing;
+        }
+        else
+        {
+            CurrentMode = Mode.Playing;
+            yield return screenFader.Fade(1f, 0f, startFadeDuration);
+        }
     }
 
     // Switches the scene's fog and lighting to match a face
@@ -556,6 +682,10 @@ public class CubeWorld : MonoBehaviour
             GenerateFace(index);
         }
 
+        // A level with an entry animation starts empty, and builds itself once the cube has turned
+        IFaceIntro intro = face.GetComponent<IFaceIntro>();
+        if (intro != null) intro.HideForIntro();
+
         // Start blending the mood while the cube turns
         ApplyMood(index, false);
 
@@ -581,6 +711,18 @@ public class CubeWorld : MonoBehaviour
         player.Spawn(face.spawnPoint);
         ApplyCameraStyle(index);
         dreamCamera.SetPlaying(player.transform);
+
+        // The entry animation plays with the player hidden and unable to move. A crystal brings them in at the end.
+        if (intro != null)
+        {
+            player.frozen = true;
+            player.SetVisible(false);
+            Color previousTint = TintOf(Mathf.Max(0, index - 1));
+            yield return StartCoroutine(intro.PlayIntro(dreamCamera, TintOf(index), previousTint));
+            yield return StartCoroutine(PlayerArrival(TintOf(index)));
+            player.frozen = false;
+        }
+
         CurrentMode = Mode.Playing;
     }
 
@@ -588,6 +730,9 @@ public class CubeWorld : MonoBehaviour
     public void CompleteCurrentLevel()
     {
         if (CurrentMode != Mode.Playing) return;
+
+        // The finished level gets its crystal in the cube view
+        faces[CurrentFaceIndex].SetCompleted(true, TintOf(CurrentFaceIndex));
 
         int next = CurrentFaceIndex + 1;
 
