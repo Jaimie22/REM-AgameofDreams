@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d460179db0b004f4cb297f3879b86378
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 371052
+  packageName: Water Drop-Dynamic Rain Surfaces (URP)
+  packageVersion: 1.0
+  assetPath: Assets/Water Drop-Dynamic Rain Surfaces (URP)/Materials/mat_env_rainyWindow.mat
+  uploadId: 893512
