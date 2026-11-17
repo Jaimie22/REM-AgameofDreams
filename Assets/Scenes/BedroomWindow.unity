@@ -3669,7 +3669,7 @@ MonoBehaviour:
   scrollable: 1
   scrollDuration: 60
   startBelow: 1500
-  scrollDistance: 4000
+  scrollDistance: 3600
   mainMenu: {fileID: 1751453217}
 --- !u!1 &406925819
 GameObject:
