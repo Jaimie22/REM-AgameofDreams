@@ -3585,106 +3585,91 @@ MonoBehaviour:
   endingSequence: {fileID: 0}
   ownText: 'R.E.M
 
-    
-
     A Game of Dreams
 
-    
 
-    
+    ModuLe
 
-    Module
+    COMP09105 : Game Engine
+    2
 
-    COMP09105
-    : Game Engine 2
-
-    
 
     Lecturer
 
-    Marco Gilardi
+    Marco GiLardi
 
-    
 
     Engine
 
-    Unity
+    Unity 6
 
-    
 
     Documentation
 
     Matthew
     Peacock
 
-    
 
     Story
 
+    Jaimie NeiLson
+
+
+    LeveL Design
+
     Jaimie Neilson
 
-    
+    Matthew
+    Peacock
 
-    Level Design
 
-    Jaimie
-    Neilson
-
-    Matthew Peacock
-
-    
-
-    UI Elements
+    UI ELements
 
     Ceana Gray
 
-    
 
     Programming
 
-    Jaimie
-    Neilson
+    Jaimie Neilson
 
-    Matthew Peacock
+    Matthew
+    Peacock
 
-    
 
     Assets
 
     With thanks to
 
-    Gems
-    & Crystals - Aztech Games
+    Gems & Crystals - Aztech Games
 
-    Zombie Hunter - Catborg Studio
+    Zombie
+    Hunter - Catborg Studio
+
+    Low-Poly tools - Resillient Logic
 
     Low-Poly
-    tools - Resillient Logic
+    trees - DinV Studio
 
-    Low-Poly trees - DinV Studio
+    Simple Water Shader - Ignite Coders
 
-    Simple Water
-    Shader - Ignite Coders
 
-    
 
-    Thanks For playing!
+    Thanks For
+    pLaying!
 
-    
 
     REM
 
-    A
-    game of Dreams...'
+    A game of Dreams...'
   font: {fileID: 12800000, guid: d068c661651df134ca75c438cb53f5ab, type: 3}
   fontSize: 65
   textColor: {r: 0.95, g: 0.93, b: 0.88, a: 1}
   backgroundAlpha: 0.85
   fadeTime: 0.6
   scrollable: 1
-  scrollDuration: 30
-  startBelow: 1300
-  scrollDistance: 2000
+  scrollDuration: 60
+  startBelow: 1500
+  scrollDistance: 4000
   mainMenu: {fileID: 1751453217}
 --- !u!1 &406925819
 GameObject:
