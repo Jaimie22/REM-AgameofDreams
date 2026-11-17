@@ -22,6 +22,16 @@ public class MainMenu : MonoBehaviour
     public float buttonSpacing = 56f;
     public int fontSize = 30;
 
+    [Header("Logo")]
+    [Tooltip("The game's title, shown above the options. Leave empty for none.")]
+    public Sprite logo;
+    [Tooltip("How wide it is, in reference pixels.")]
+    public float logoWidth = 700f;
+    [Tooltip("Where it sits. 0.5 is centre, higher is nearer the top.")]
+    [Range(0f, 1f)] public float logoHeight = 0.78f;
+    [Tooltip("How far in from the left. Match the options to line them up.")]
+    [Range(0f, 0.5f)] public float logoLeft = 0.08f;
+
     [Header("Look")]
     public Font menuFont;
     public Color textColor = new Color(0.92f, 0.9f, 0.85f);
@@ -36,11 +46,27 @@ public class MainMenu : MonoBehaviour
     [Tooltip("The scene that starts a new game.")]
     public string newGameScene = "GameWindow";
 
+    [Header("Opening")]
+    [Tooltip("The cutscene that plays when a new game starts.")]
+    public UnityEngine.Playables.PlayableDirector OpeningCutscene;
+
+    [Header("Opening Fade")]
+    [Tooltip("Seconds to fade to black before the cutscene.")]
+    public float fadeToBlackTime = 1f;
+    [Tooltip("Seconds to fade back in once the cutscene is running.")]
+    public float fadeFromBlackTime = 1.5f;
+
+    Image openingFade;
+
     [Header("Panels")]
     [Tooltip("Optional. Shown when Settings is chosen.")]
     public GameObject settingsPanel;
+
     [Tooltip("Optional. Shown when Credits is chosen.")]
     public GameObject creditsPanel;
+
+    [Tooltip("The credits shown over the menu.")]
+    public CreditsPanel creditsPanelScript;
 
     CanvasGroup group;
     Text[] options;
@@ -75,6 +101,9 @@ public class MainMenu : MonoBehaviour
             events.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
         }
 
+        // The title sits above the options, and fades in with them
+        BuildLogo(canvasObj.transform);
+
         // Does a save exist? If not, Load is shown greyed out
         bool hasSave = PlayerPrefs.HasKey("SaveExists");
 
@@ -84,6 +113,30 @@ public class MainMenu : MonoBehaviour
         options[2] = MakeOption(canvasObj.transform, "Settings", 2, OpenSettings, true);
         options[3] = MakeOption(canvasObj.transform, "Credits", 3, OpenCredits, true);
         options[4] = MakeOption(canvasObj.transform, "Exit", 4, Quit, true);
+    }
+
+    // The game's title above the options
+    void BuildLogo(Transform parent)
+    {
+        if (logo == null) return;
+
+        GameObject obj = new GameObject("Logo");
+        obj.transform.SetParent(parent, false);
+
+        Image image = obj.AddComponent<Image>();
+        image.sprite = logo;
+        image.preserveAspect = true;
+        image.raycastTarget = false;
+
+        // Sized by width, with the height worked out from the artwork itself
+        float ratio = logo.rect.height / logo.rect.width;
+
+        RectTransform rect = image.rectTransform;
+        rect.anchorMin = new Vector2(logoLeft, logoHeight);
+        rect.anchorMax = new Vector2(logoLeft, logoHeight);
+        rect.pivot = new Vector2(0f, 0.5f);
+        rect.sizeDelta = new Vector2(logoWidth, logoWidth * ratio);
+        rect.anchoredPosition = Vector2.zero;
     }
 
     // One menu line: plain text that lights up when hovered
@@ -164,7 +217,98 @@ public class MainMenu : MonoBehaviour
     void NewGame()
     {
         Debug.Log("Starting a new dream.");
-        SceneManager.LoadScene(newGameScene);
+        StartCoroutine(PlayOpening());
+    }
+
+    // Fades the menu away, then runs the cutscene
+    IEnumerator PlayOpening()
+    {
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        // The menu goes first
+        for (float t = 1f; t > 0f; t -= Time.deltaTime / 0.6f)
+        {
+            group.alpha = t;
+            yield return null;
+        }
+
+        group.alpha = 0f;
+
+        // The menu music fades away as the room goes dark
+        MenuAudio.Instance?.FadeOut(fadeToBlackTime);
+
+        // Then the room fades to black, so the cut to the cutscene isn't seen
+        BuildOpeningFade();
+
+        for (float t = 0f; t < 1f; t += Time.deltaTime / Mathf.Max(0.1f, fadeToBlackTime))
+        {
+            openingFade.color = new Color(0f, 0f, 0f, Mathf.SmoothStep(0f, 1f, t));
+            yield return null;
+        }
+
+        openingFade.color = Color.black;
+
+        // Hand the camera over to Cinemachine while the screen is dark
+        if (menuCamera == null) menuCamera = FindFirstObjectByType<MenuCamera>();
+
+        if (menuCamera != null)
+        {
+            menuCamera.enabled = false;
+            if (menuCamera.brain != null) menuCamera.brain.enabled = true;
+        }
+
+        if (OpeningCutscene == null)
+        {
+            SceneManager.LoadScene(newGameScene);
+            yield break;
+        }
+
+        OpeningCutscene.Play();
+
+        // Give it a frame to take hold of the camera before revealing it
+        yield return null;
+        yield return null;
+
+        // And fade back in on the first shot
+        for (float t = 1f; t > 0f; t -= Time.deltaTime / Mathf.Max(0.1f, fadeFromBlackTime))
+        {
+            openingFade.color = new Color(0f, 0f, 0f, Mathf.SmoothStep(0f, 1f, t));
+            yield return null;
+        }
+
+        openingFade.color = new Color(0f, 0f, 0f, 0f);
+    }
+
+    // Called by the credits panel's Back button
+    public void CloseCredits()
+    {
+        group.interactable = true;
+        group.blocksRaycasts = true;
+    }
+
+    // A full-screen black overlay, built when it's needed
+    void BuildOpeningFade()
+    {
+        if (openingFade != null) return;
+
+        GameObject canvasObj = new GameObject("OpeningFadeCanvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 1000;   // over everything, including the menu
+
+        GameObject obj = new GameObject("Fade");
+        obj.transform.SetParent(canvasObj.transform, false);
+
+        openingFade = obj.AddComponent<Image>();
+        openingFade.color = new Color(0f, 0f, 0f, 0f);
+        openingFade.raycastTarget = false;
+
+        RectTransform rect = openingFade.rectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
     void LoadGame()
@@ -237,8 +381,20 @@ public class MainMenu : MonoBehaviour
         group.blocksRaycasts = true;
     }
 
+    // Called by the Credits button on the menu
     void OpenCredits()
     {
+        if (creditsPanelScript == null)
+            creditsPanelScript = FindFirstObjectByType<CreditsPanel>();
+
+        if (creditsPanelScript != null)
+        {
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            creditsPanelScript.Show();
+            return;
+        }
+
         if (creditsPanel != null) creditsPanel.SetActive(true);
         else Debug.Log("No credits panel assigned yet.");
     }

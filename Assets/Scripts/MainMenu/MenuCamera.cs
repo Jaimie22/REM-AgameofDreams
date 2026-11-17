@@ -28,15 +28,24 @@ public class MenuCamera : MonoBehaviour
     [Tooltip("Shapes the movement, so it eases out of one shot and into the next.")]
     public AnimationCurve ease = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("Cinemachine")]
+    [Tooltip("The Brain on this camera. It stays off while the menu is in control.")]
+    public Unity.Cinemachine.CinemachineBrain brain;
+
+    void Awake()
+    {
+        cam = GetComponent<Camera>();
+
+        // The menu drives the camera directly, so the Brain stays out of the way
+        if (brain == null) brain = GetComponent<Unity.Cinemachine.CinemachineBrain>();
+        if (brain != null) brain.enabled = false;
+    }
+
     Camera cam;
     Coroutine gliding;
 
     public bool IsMoving => gliding != null;
 
-    void Awake()
-    {
-        cam = GetComponent<Camera>();
-    }
 
     void Start()
     {

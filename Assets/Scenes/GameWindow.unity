@@ -4616,13 +4616,13 @@ MonoBehaviour:
     Thanks For
     playing!
 
+
     REM
 
-
     A game of Dreams...'
-  creditsFont: {fileID: 12800000, guid: cddc70f9f36e2504d9900e0757803ede, type: 3}
+  creditsFont: {fileID: 12800000, guid: d068c661651df134ca75c438cb53f5ab, type: 3}
   creditsDuration: 30
-  creditsFontSize: 50
+  creditsFontSize: 60
   creditsColor: {r: 0.6792453, g: 0.6792453, b: 0.6792453, a: 1}
   creditsMusic: {fileID: 0}
   musicVolume: 0.6
