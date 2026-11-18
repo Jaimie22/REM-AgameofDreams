@@ -26,7 +26,7 @@ MonoBehaviour:
   wallChance: 0.1
   wallHeight: 3
   wallGap: 2.5
-  pillarsPerCell: {x: 1, y: 2}
+  pillarsPerCell: {x: 0, y: 0}
   pillarSize: 1.5
   gapChance: 0.2
   gapSize: {x: 1.5, y: 2}
@@ -35,8 +35,8 @@ MonoBehaviour:
   collectibles: 5
   floorMaterial: {fileID: 2100000, guid: 0b260dcf0f2e8f443ab1a7cbed9f4aae, type: 2}
   wallMaterial: {fileID: 2100000, guid: 0b260dcf0f2e8f443ab1a7cbed9f4aae, type: 2}
-  doorMaterial: {fileID: 0}
-  collectibleMaterial: {fileID: 0}
+  doorMaterial: {fileID: 2100000, guid: 9c5079f1ab61afd4ba9a3596a73f4217, type: 2}
+  collectibleMaterial: {fileID: 2100000, guid: fd627e8fc90f0d64dbe459ff7594bb88, type: 2}
   footstepClips:
   - {fileID: 8300000, guid: baaf211dc78fc3d4c95c5de4fa7ca312, type: 3}
   - {fileID: 8300000, guid: eb89834ab1c75184f9bc00d400e8ff97, type: 3}

@@ -31,10 +31,10 @@ MonoBehaviour:
   gravity: -20
   jumpHeight: 2
   collectibles: 0
-  floorMaterial: {fileID: 0}
-  wallMaterial: {fileID: 0}
-  doorMaterial: {fileID: 0}
-  collectibleMaterial: {fileID: 0}
+  floorMaterial: {fileID: 2100000, guid: 3a5456a8808d4054d8368a78ad2cab19, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 3a5456a8808d4054d8368a78ad2cab19, type: 2}
+  doorMaterial: {fileID: 2100000, guid: 50cb67f11c78b0841b76233f02a5a4e1, type: 2}
+  collectibleMaterial: {fileID: 2100000, guid: 53b6a2d487267734fbcd2cd07a21b31d, type: 2}
   footstepClips:
   - {fileID: 8300000, guid: 2321cb73e731c824eb474b7c18829c5b, type: 3}
   - {fileID: 8300000, guid: 3db05314748138e46ad6aaeaef7a487b, type: 3}
@@ -47,6 +47,9 @@ MonoBehaviour:
   doorClip: {fileID: 8300000, guid: fa2f6406fe373464188d1b257c095f7e, type: 3}
   ambientClip: {fileID: 8300000, guid: cff44fd741cfbe34aa612a314152c02a, type: 3}
   ambientVolume: 0.5
+  digClips: []
+  waterFlowClip: {fileID: 0}
+  waterFlowVolume: 0.6
   crawlClips: []
   crawlVolume: 1
   attackClip: {fileID: 0}

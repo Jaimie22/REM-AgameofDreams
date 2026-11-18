@@ -52,15 +52,29 @@ public static class CrystalKit
         rotation = Quaternion.LookRotation(-up, forward);
     }
 
+    // Optional crystal-shaped mesh (squeezed to fit a unit cube) that pillars use instead of a plain cube.
+    // Set by REMLevelDecor from the generated Crystal_Pillar model. Null means plain cubes, as before.
+    public static Mesh PillarMesh;
+
     // A tall crystal pillar with no collider, so it never gets in the way
     public static GameObject Pillar(string name, Material material, Vector3 size, Transform parent = null)
     {
-        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = name;
+        GameObject go;
+        if (PillarMesh != null)
+        {
+            go = new GameObject(name);
+            go.AddComponent<MeshFilter>().sharedMesh = PillarMesh;
+            go.AddComponent<MeshRenderer>();
+        }
+        else
+        {
+            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            Collider col = go.GetComponent<Collider>();
+            if (col != null) Object.Destroy(col);
+        }
         if (parent != null) go.transform.SetParent(parent, false);
         go.transform.localScale = size;
-        Collider col = go.GetComponent<Collider>();
-        if (col != null) Object.Destroy(col);
         go.GetComponent<Renderer>().sharedMaterial = material;
         return go;
     }

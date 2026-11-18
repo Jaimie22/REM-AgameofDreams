@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b34de1fe53b8c949b88e7cc92ebf4d4, type: 3}
+  m_Name: 6-Awakening
+  m_EditorClassIdentifier: 
+  levelName: Awakening
+  designNotes: 'Generated: warm bedroom wood and cracked plaster, wooden footsteps,
+    morning ambience.'
+  cellSize: 5
+  coverage: 0.9
+  minRouteCells: 8
+  maxBranchLength: 3
+  roomChance: 0.15
+  stepHeight: 0.3
+  maxHeightDrift: 2
+  wallChance: 0.25
+  wallHeight: 3
+  wallGap: 2.5
+  pillarsPerCell: {x: 0, y: 1}
+  pillarSize: 1.2
+  gapChance: 0.15
+  gapSize: {x: 1.5, y: 2.5}
+  gravity: -20
+  jumpHeight: 2
+  collectibles: 0
+  floorMaterial: {fileID: 2100000, guid: cf51344d51ed8fb45a453541bb2eb5a5, type: 2}
+  wallMaterial: {fileID: 2100000, guid: 05ec501c1760a1a4baf491ae9546effe, type: 2}
+  doorMaterial: {fileID: 2100000, guid: 9c5079f1ab61afd4ba9a3596a73f4217, type: 2}
+  collectibleMaterial: {fileID: 2100000, guid: fd627e8fc90f0d64dbe459ff7594bb88, type: 2}
+  footstepClips:
+  - {fileID: 8300000, guid: 37d397e7eb1ed014692bbc68955bf30c, type: 3}
+  - {fileID: 8300000, guid: 08bedce94674f8941b7a6830bceca838, type: 3}
+  - {fileID: 8300000, guid: 4288e8aeea43b574fac3fa532fcd4f17, type: 3}
+  - {fileID: 8300000, guid: 4029267db90e87748a026cee9cf0f568, type: 3}
+  - {fileID: 8300000, guid: 31bdf842176351a44a43b8388597131f, type: 3}
+  footstepVolume: 1
+  jumpClip: {fileID: 8300000, guid: 7682ee7b3d68c7047843e037d9655e5b, type: 3}
+  pickupClip: {fileID: 8300000, guid: 5b921bacd8ede2d4fa2ba495b92f0329, type: 3}
+  doorClip: {fileID: 8300000, guid: 57c5caba53cb78e4ea1132a922be21b1, type: 3}
+  ambientClip: {fileID: 8300000, guid: 48cab2c640c9faa4fbb079e546ec420d, type: 3}
+  ambientVolume: 0.5
+  digClips: []
+  waterFlowClip: {fileID: 0}
+  waterFlowVolume: 0.6
+  crawlClips: []
+  crawlVolume: 1
+  attackClip: {fileID: 0}
+  deathClip: {fileID: 0}

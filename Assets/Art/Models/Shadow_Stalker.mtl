@@ -1,0 +1,5 @@
+newmtl Shadow
+Kd 0.8 0.8 0.8
+
+newmtl Eye
+Kd 0.8 0.8 0.8

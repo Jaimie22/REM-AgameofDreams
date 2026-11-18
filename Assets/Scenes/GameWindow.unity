@@ -2609,6 +2609,145 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 360915112}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &362204544
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 362204547}
+  - component: {fileID: 362204546}
+  - component: {fileID: 362204545}
+  - component: {fileID: 362204549}
+  - component: {fileID: 362204548}
+  m_Layer: 0
+  m_Name: EnvironmentManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &362204545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362204544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8cc1f87af3f284ca8745117514df2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  amount: 0.5
+  period: 5
+--- !u!114 &362204546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362204544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8cc1f87af3f284ca8745117514df2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  amount: 0.5
+  period: 5
+--- !u!4 &362204547
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362204544}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &362204548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362204544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10c25be8e5cb63c4aa88435ba2d6c78f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  heartLose: {fileID: 8300000, guid: 91f9cc3b2b3354948b359849f463508e, type: 3}
+  demonAlert: {fileID: 8300000, guid: 6a1503cdfaa277d49a983e9aefc55d16, type: 3}
+  demonGrowl: {fileID: 8300000, guid: 72b9125c2a644db45a6eb671d3f2db48, type: 3}
+  spawnChime: {fileID: 8300000, guid: 648b7619882f77f4fabcb30b64ce6f35, type: 3}
+  crystalShatter: {fileID: 8300000, guid: 2310adfb85a3fe640971e1a8de3ddd6e, type: 3}
+  beaconHum: {fileID: 8300000, guid: d43a5260edc01a042a6bada95028d39f, type: 3}
+  spiderAlert: {fileID: 8300000, guid: 935f6464d4251e04cb245d2138a8b0f0, type: 3}
+  volume: 0.8
+  demonHearingRange: 14
+--- !u!114 &362204549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362204544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8ef16b725769df4f8fef1865a032cf2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefabs:
+  - {fileID: 2515267338795394457, guid: 175fc0e9d91c608458b2583e00029a69, type: 3}
+  - {fileID: 3022840971167741315, guid: 3c369641ea9e1b0498a4af33e92820be, type: 3}
+  - {fileID: 4242769198229699733, guid: fd08732ec4d423f49a4e857337e60961, type: 3}
+  - {fileID: 2194511512108115284, guid: b415868bb4a936044a9a3af5b948d582, type: 3}
+  - {fileID: 4014634550901397840, guid: e220bd182b1924b46895305baf5a0851, type: 3}
+  - {fileID: 870155987248031134, guid: 32532cfc40b0b174a84fb3148174ca54, type: 3}
+  - {fileID: 7398270352360489753, guid: 7d1373796a91ac74cb7ee10850f6ce31, type: 3}
+  - {fileID: 2044626981616290575, guid: 5ede712c1db50f442ba3a1fd01cab471, type: 3}
+  - {fileID: 1210998316812058407, guid: 2dcc1de2534e5ab44ae33bda10ab8b24, type: 3}
+  - {fileID: 3908693220732639532, guid: efea23d9b2f6dbb4bb76848490ebe094, type: 3}
+  - {fileID: 403139583773516522, guid: fd27a4ddb36ca9d41b5d9bb2ccf19a3b, type: 3}
+  - {fileID: 4897820242271881094, guid: 31ba751905b77244fac6659f0c72f5fa, type: 3}
+  - {fileID: 6674206601326485295, guid: 8e2d8ee77ddd08b4c8c63c90fae3df66, type: 3}
+  - {fileID: 749833901611261882, guid: 9dcb11c1d3f8802408acd37b24f975ef, type: 3}
+  - {fileID: 8307600342799321274, guid: 54e29c4c3246c9e44889fa2d05c0d67d, type: 3}
+  - {fileID: 6615008919965717336, guid: d4e0b528a09c56a45b5ea4a4a3b0b9d3, type: 3}
+  - {fileID: 3587500186241256124, guid: c11bb7e35ea8c084ab464b8592915e14, type: 3}
+  - {fileID: 7120971411375027111, guid: 6af848b119d4a9640a81048b5f70261f, type: 3}
+  - {fileID: 1629601993010077386, guid: 98eac7b3c523e744a9f6f813d4435d51, type: 3}
+  - {fileID: 959988694035260771, guid: e4c3342b0588ee948831af44bad4a72c, type: 3}
+  - {fileID: 7365898727315336688, guid: 771ff7626ac428749986294708d6e100, type: 3}
+  - {fileID: 4783022537839963402, guid: cbac0229f126c974bbfd12a2cdea0413, type: 3}
+  - {fileID: 146384701722572788, guid: 262705d03a8bb54408bf275672e6ce5f, type: 3}
+  materials:
+  - {fileID: 2100000, guid: f463552542f19aa489437969e3ec8c88, type: 2}
+  - {fileID: 2100000, guid: d9814f709814ee647b9bc2843ab91c4a, type: 2}
+  - {fileID: 2100000, guid: e1dbe55ad0d285f44963dd7ae9fbd00b, type: 2}
+  - {fileID: 2100000, guid: 2de01df010f57c749968d2b52a648c80, type: 2}
+  - {fileID: 2100000, guid: 7072d8a5e3d8a314ca9ea8667f091501, type: 2}
+  - {fileID: 2100000, guid: 2333297391532f44b858e38a4ff90cdd, type: 2}
+  - {fileID: 2100000, guid: 7870d8834f84ffb44a7fa3329b64b8a5, type: 2}
+  stalkerPrefab: {fileID: 7365898727315336688, guid: 771ff7626ac428749986294708d6e100, type: 3}
+  crawlerPrefab: {fileID: 2194511512108115284, guid: b415868bb4a936044a9a3af5b948d582, type: 3}
+  spawnProps: 1
+  spawnEffects: 1
+  solidBigProps: 0
+  halfSize: 13.5
+  seed: 7
+  replaceBeacon: 1
+  beaconScale: 0.75
 --- !u!1 &373590675
 GameObject:
   m_ObjectHideFlags: 0
@@ -4652,6 +4791,7 @@ GameObject:
   - component: {fileID: 624916858}
   - component: {fileID: 624916857}
   - component: {fileID: 624916859}
+  - component: {fileID: 624916860}
   m_Layer: 0
   m_Name: Face_6_Bottom
   m_TagString: Untagged
@@ -4730,7 +4870,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75eb25a47bef3b145a5cb460e8940748, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  theme: {fileID: 0}
+  theme: {fileID: 11400000, guid: b4e09089b0f78474887287e234d856ec, type: 2}
   faceSize: 30
   edgeMargin: 0.5
   baseHeight: 1
@@ -4743,9 +4883,9 @@ MonoBehaviour:
   boardHeight: 0.2
   boardPrefab: {fileID: 0}
   startDepth: 0.15
-  floorMaterial: {fileID: 0}
+  floorMaterial: {fileID: 2100000, guid: cf51344d51ed8fb45a453541bb2eb5a5, type: 2}
   waterMaterial: {fileID: 2100000, guid: 8759ec410a6774b4ea13ae32dc2b8d2e, type: 2}
-  boardMaterial: {fileID: 0}
+  boardMaterial: {fileID: 2100000, guid: cf51344d51ed8fb45a453541bb2eb5a5, type: 2}
   floorColor: {r: 0.22, g: 0.24, b: 0.3, a: 1}
   waterColor: {r: 0.4, g: 0.6, b: 0.75, a: 1}
   boardColor: {r: 0.5, g: 0.42, b: 0.33, a: 1}
@@ -4761,13 +4901,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54bf07a6813a7fe4ebf80061b9ea1350, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hunterPrefab: {fileID: 5921367157248738129, guid: f94c577fdd00e594abc50fdff8f3ff17, type: 3}
+  hunterPrefab: {fileID: 7365898727315336688, guid: 771ff7626ac428749986294708d6e100, type: 3}
   hunterCount: 4
   faceIndex: 5
   ringRadius: 12
   spread: 1
   clearOfSpawn: 12
-  standHeight: 1
+  standHeight: 1.03
   waterLimit: 14
   plankReach: 3
   plankHalfWidth: 0.8
@@ -4779,6 +4919,25 @@ MonoBehaviour:
   wanderSpeed: 1
   sightRange: 60
   speedVariation: 0.3
+--- !u!114 &624916860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 624916854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3545f341425f7ea4e993bc34a64f2423, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fogEnabled: 1
+  fogColor: {r: 1, g: 0.8, b: 0.64, a: 1}
+  fogDensity: 0.006
+  ambientColor: {r: 0.62, g: 0.52, b: 0.48, a: 1}
+  sunIntensity: 1.1
+  sunColor: {r: 1, g: 0.9, b: 0.76, a: 1}
+  skyColor: {r: 1, g: 0.78, b: 0.62, a: 1}
 --- !u!1 &628456752
 GameObject:
   m_ObjectHideFlags: 0
@@ -8507,10 +8666,10 @@ MonoBehaviour:
   spinSpeed: 25
   periodRange: {x: 5, y: 8}
   evenness: 0.8
-  groundMaterial: {fileID: 0}
+  groundMaterial: {fileID: 2100000, guid: 9c00b213de54fa14ebe2c39faa4dc4e7, type: 2}
   groundColor: {r: 0.1, g: 0.11, b: 0.16, a: 1}
   edgeWallHeight: 4
-  demonPrefab: {fileID: 8667489010519003238, guid: 20afa8c24e9a62149b8e09978b62867f, type: 3}
+  demonPrefab: {fileID: 2194511512108115284, guid: b415868bb4a936044a9a3af5b948d582, type: 3}
   demonCount: 4
   demonChaseSpeed: 3
   demonWanderSpeed: 1.5
@@ -8520,20 +8679,20 @@ MonoBehaviour:
   demonsClearOfStart: 7
   demonSpeedVariation: 0.2
   fragmentHeight: 1.2
-  fragmentPrefab: {fileID: 0}
+  fragmentPrefab: {fileID: 2044626981616290575, guid: 5ede712c1db50f442ba3a1fd01cab471, type: 3}
   fragmentSize: 0.6
   altarSize: 1.4
   altarTriggerRadius: 2.5
-  altarPrefab: {fileID: 0}
+  altarPrefab: {fileID: 959988694035260771, guid: e4c3342b0588ee948831af44bad4a72c, type: 3}
   islandColor: {r: 0.38, g: 0.4, b: 0.52, a: 1}
   ferryColor: {r: 0.35, g: 0.6, b: 0.78, a: 1}
   sweepColor: {r: 0.3, g: 0.7, b: 0.65, a: 1}
   liftColor: {r: 0.6, g: 0.45, b: 0.82, a: 1}
   spinColor: {r: 0.85, g: 0.62, b: 0.35, a: 1}
   sideColor: {r: 0.32, g: 0.62, b: 0.55, a: 1}
-  islandMaterial: {fileID: 0}
-  movingMaterial: {fileID: 0}
-  doorMaterial: {fileID: 0}
+  islandMaterial: {fileID: 2100000, guid: 46c36dbb9c4068d4b905e7e384826f80, type: 2}
+  movingMaterial: {fileID: 2100000, guid: fb0f158473a9c264e93dd13abc522773, type: 2}
+  doorMaterial: {fileID: 2100000, guid: 9c5079f1ab61afd4ba9a3596a73f4217, type: 2}
 --- !u!114 &1109919122
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8547,12 +8706,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fogEnabled: 1
-  fogColor: {r: 0.22745098, g: 0.27450982, b: 0.3764706, a: 1}
-  fogDensity: 0.02
-  ambientColor: {r: 0.11764706, g: 0.14117648, b: 0.21960784, a: 1}
-  sunIntensity: 0.25
-  sunColor: {r: 1, g: 1, b: 1, a: 1}
-  skyColor: {r: 0.22745098, g: 0.27450982, b: 0.3764706, a: 1}
+  fogColor: {r: 0.44, g: 0.55, b: 0.84, a: 1}
+  fogDensity: 0.004
+  ambientColor: {r: 0.46, g: 0.52, b: 0.72, a: 1}
+  sunIntensity: 1.05
+  sunColor: {r: 1, g: 0.94, b: 0.9, a: 1}
+  skyColor: {r: 0.3, g: 0.42, b: 0.74, a: 1}
 --- !u!1 &1129077825
 GameObject:
   m_ObjectHideFlags: 0
@@ -15484,12 +15643,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fogEnabled: 1
-  fogColor: {r: 1, g: 1, b: 1, a: 0.1764706}
-  fogDensity: 0.005
-  ambientColor: {r: 0.8867924, g: 0.6674675, b: 0.53123885, a: 1}
-  sunIntensity: 0.1
-  sunColor: {r: 0.9716981, g: 0.94003594, b: 0.64627093, a: 1}
-  skyColor: {r: 0, g: 0.44559392, b: 0.7735849, a: 1}
+  fogColor: {r: 0.93, g: 0.62, b: 0.6, a: 1}
+  fogDensity: 0.007
+  ambientColor: {r: 0.58, g: 0.46, b: 0.48, a: 1}
+  sunIntensity: 1.15
+  sunColor: {r: 1, g: 0.82, b: 0.62, a: 1}
+  skyColor: {r: 0.88, g: 0.56, b: 0.62, a: 1}
 --- !u!114 &1687725631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15692,7 +15851,7 @@ MonoBehaviour:
   guaranteeFragmentCount: 1
   altarSize: 1
   altarTriggerRadius: 1
-  altarPrefab: {fileID: 0}
+  altarPrefab: {fileID: 959988694035260771, guid: e4c3342b0588ee948831af44bad4a72c, type: 3}
 --- !u!114 &1731782362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15706,12 +15865,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fogEnabled: 1
-  fogColor: {r: 0, g: 0, b: 0, a: 1}
-  fogDensity: 0.03
-  ambientColor: {r: 0.05, g: 0.05, b: 0.08, a: 1}
-  sunIntensity: 0.1
-  sunColor: {r: 1, g: 1, b: 1, a: 1}
-  skyColor: {r: 0, g: 0, b: 0, a: 1}
+  fogColor: {r: 0.14, g: 0.12, b: 0.3, a: 1}
+  fogDensity: 0.01
+  ambientColor: {r: 0.34, g: 0.34, b: 0.56, a: 1}
+  sunIntensity: 0.95
+  sunColor: {r: 0.78, g: 0.82, b: 1, a: 1}
+  skyColor: {r: 0.1, g: 0.09, b: 0.24, a: 1}
 --- !u!1 &1738452826
 GameObject:
   m_ObjectHideFlags: 0
@@ -16475,12 +16634,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fogEnabled: 1
-  fogColor: {r: 0.4056604, g: 0, b: 0, a: 1}
-  fogDensity: 0.03
-  ambientColor: {r: 0.05, g: 0.05, b: 0.08, a: 1}
-  sunIntensity: 0.1
-  sunColor: {r: 1, g: 1, b: 1, a: 1}
-  skyColor: {r: 1, g: 0, b: 0, a: 1}
+  fogColor: {r: 0.09, g: 0.06, b: 0.18, a: 1}
+  fogDensity: 0.018
+  ambientColor: {r: 0.26, g: 0.22, b: 0.42, a: 1}
+  sunIntensity: 0.7
+  sunColor: {r: 0.72, g: 0.62, b: 1, a: 1}
+  skyColor: {r: 0.06, g: 0.045, b: 0.14, a: 1}
 --- !u!114 &1760751743
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16510,7 +16669,7 @@ MonoBehaviour:
   altarSize: 1.4
   altarTriggerRadius: 2
   playEntryAnimation: 1
-  crystalMaterial: {fileID: 0}
+  crystalMaterial: {fileID: 2100000, guid: 8c37ae370a03ab949b4dc0e20b8d2399, type: 2}
   orbitTime: 3.5
   releaseDuration: 2.5
   fallTime: 0.9
@@ -16534,7 +16693,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74a2393e3fa0e7647bd7bc35c1bce884, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hunterPrefab: {fileID: 8667489010519003238, guid: 20afa8c24e9a62149b8e09978b62867f, type: 3}
+  hunterPrefab: {fileID: 4348933980862923546, guid: 29a9c470dd0f9fb4f99903b68b9786db, type: 3}
   faceIndex: 2
   minDistanceFromSpawn: 18
   oppositeMargin: 4
@@ -18540,8 +18699,8 @@ MonoBehaviour:
   gearThickness: 0.3
   pegGearHeight: 0.5
   pegHeight: 0.7
-  gearPrefab: {fileID: 0}
-  gearPrefabRadius: 1
+  gearPrefab: {fileID: 3908693220732639532, guid: efea23d9b2f6dbb4bb76848490ebe094, type: 3}
+  gearPrefabRadius: 0.985
   decoyCount: 5
   decoyOffset: 0.25
   gearSpacing: 4
@@ -18571,9 +18730,9 @@ MonoBehaviour:
   looseGearColor: {r: 0.75, g: 0.65, b: 0.3, a: 1}
   cageColor: {r: 0.15, g: 0.15, b: 0.17, a: 1}
   floorMaterial: {fileID: 2100000, guid: 8dc2854afb55bfc44a18257db9a288b5, type: 2}
-  wallMaterial: {fileID: 0}
-  gearMaterial: {fileID: 0}
-  doorMaterial: {fileID: 0}
+  wallMaterial: {fileID: 2100000, guid: 3a5456a8808d4054d8368a78ad2cab19, type: 2}
+  gearMaterial: {fileID: 2100000, guid: 50cb67f11c78b0841b76233f02a5a4e1, type: 2}
+  doorMaterial: {fileID: 2100000, guid: 53b6a2d487267734fbcd2cd07a21b31d, type: 2}
 --- !u!114 &2016463689
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18587,12 +18746,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fogEnabled: 1
-  fogColor: {r: 0.16470589, g: 0.14117648, b: 0.1254902, a: 1}
-  fogDensity: 0.03
-  ambientColor: {r: 0.101960786, g: 0.078431375, b: 0.0627451, a: 1}
-  sunIntensity: 0.1
-  sunColor: {r: 1, g: 1, b: 1, a: 1}
-  skyColor: {r: 1, g: 0.6901961, b: 0.4392157, a: 1}
+  fogColor: {r: 0.2, g: 0.14, b: 0.09, a: 1}
+  fogDensity: 0.014
+  ambientColor: {r: 0.38, g: 0.29, b: 0.22, a: 1}
+  sunIntensity: 0.95
+  sunColor: {r: 1, g: 0.84, b: 0.6, a: 1}
+  skyColor: {r: 0.16, g: 0.11, b: 0.08, a: 1}
 --- !u!114 &2016463690
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19420,3 +19579,4 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 619689962}
   - {fileID: 457662996}
+  - {fileID: 362204547}

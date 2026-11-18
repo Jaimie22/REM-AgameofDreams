@@ -32,10 +32,10 @@ MonoBehaviour:
   gravity: -14
   jumpHeight: 2
   collectibles: 0
-  floorMaterial: {fileID: 0}
-  wallMaterial: {fileID: 0}
-  doorMaterial: {fileID: 0}
-  collectibleMaterial: {fileID: 0}
+  floorMaterial: {fileID: 2100000, guid: f6f6ba084da301e438a3443760a7a2a8, type: 2}
+  wallMaterial: {fileID: 2100000, guid: f4e5a627e63ae224eb48037c07d68437, type: 2}
+  doorMaterial: {fileID: 2100000, guid: 9c5079f1ab61afd4ba9a3596a73f4217, type: 2}
+  collectibleMaterial: {fileID: 2100000, guid: fd627e8fc90f0d64dbe459ff7594bb88, type: 2}
   footstepClips:
   - {fileID: 8300000, guid: ea1f7a0121565da468bf7b4283d6f58e, type: 3}
   - {fileID: 8300000, guid: 2f6cc2b96c526b841a44f07d08e2b775, type: 3}
